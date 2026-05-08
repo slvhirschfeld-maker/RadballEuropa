@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radball Europa</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 15px; }
+.header { background: #fff; border-bottom: 0.5px solid #ddd; padding: 0 20px; display: flex; align-items: center; gap: 16px; height: 52px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+.logo { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.logo-icon { width: 30px; height: 30px; background: #1a1a1a; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-icon svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2; }
+nav { display: flex; gap: 2px; margin-left: auto; flex-wrap: wrap; }
+nav button { background: none; border: none; padding: 5px 11px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #555; transition: all 0.15s; white-space: nowrap; }
+nav button:hover { background: #f0f0ec; color: #1a1a1a; }
+nav button.active { background: #1a1a1a; color: #fff; }
+.container { max-width: 900px; margin: 0 auto; padding: 20px 14px; }
+.section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Ergebnisse */
+.filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-btn { background: #fff; border: 0.5px solid #ddd; padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; color: #555; transition: all 0.15s; }
+.filter-btn:hover { border-color: #aaa; }
+.filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.match-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid #f0f0e8; }
+.match-row:last-child { border-bottom: none; }
+.match-teams { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; }
+.vs { font-size: 11px; color: #bbb; font-weight: 400; }
+.score { font-size: 17px; font-weight: 500; min-width: 52px; text-align: center; }
+.score-sep { color: #ccc; margin: 0 1px; }
+.match-meta { font-size: 11px; color: #aaa; min-width: 100px; text-align: right; }
+.live-dot { display: inline-block; width: 6px; height: 6px; background: #e03535; border-radius: 50%; margin-right: 4px; animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+.country-label { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; margin-bottom: 9px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+/* Turniere */
+.tournament-card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 14px; }
+.date-box { background: #f5f5f0; border-radius: 8px; padding: 7px 10px; text-align: center; min-width: 50px; flex-shrink: 0; }
+.date-day { font-size: 20px; font-weight: 500; line-height: 1; }
+.date-mon { font-size: 10px; color: #888; margin-top: 2px; }
+.tour-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.tour-meta { font-size: 12px; color: #888; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+.badge-wm { background: #e8f0fb; color: #1a56a8; }
+.badge-em { background: #edfae6; color: #2a7a1e; }
+.badge-nat { background: #fdf3e6; color: #a05a10; }
+.badge-int { background: #f3eefb; color: #6a30b8; }
+
+/* Tabellen */
+.standings-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.standings-table th { text-align: left; padding: 7px 8px; font-size: 11px; color: #888; font-weight: 500; border-bottom: 0.5px solid #e8e8e0; background: #fafaf7; }
+.standings-table td { padding: 8px 8px; border-bottom: 0.5px solid #f0f0e8; }
+.standings-table tr:last-child td { border-bottom: none; }
+.rank { font-weight: 500; color: #aaa; width: 24px; }
+.rank.top { color: #c8900a; }
+.pts { font-weight: 500; }
+
+/* Detail */
+.back-btn { background: none; border: 0.5px solid #ddd; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; color: #555; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 5px; }
+.tour-detail { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.tour-detail-header { background: #1a1a1a; color: #fff; padding: 14px 18px; }
+.tour-detail-header .org { font-size: 11px; color: #888; margin-bottom: 3px; }
+.tour-detail-header h2 { font-size: 15px; font-weight: 500; margin-bottom: 7px; }
+.tour-detail-header .meta-row { display: flex; gap: 14px; font-size: 12px; color: #bbb; flex-wrap: wrap; }
+.quali-note { background: #edfae6; color: #2a7a1e; font-size: 12px; padding: 9px 18px; border-bottom: 0.5px solid #c8eabc; display: flex; align-items: center; gap: 7px; }
+.detail-section { padding: 14px 18px; border-bottom: 0.5px solid #f0f0e8; }
+.detail-section:last-child { border-bottom: none; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; }
+.team-entry { border: 0.5px solid #e8e8e0; border-radius: 8px; padding: 9px 12px; display: flex; gap: 10px; align-items: center; }
+.verband-badge { font-size: 11px; background: #f0f0ec; color: #666; padding: 2px 6px; border-radius: 4px; font-weight: 500; min-width: 32px; text-align: center; flex-shrink: 0; }
+.team-name { font-size: 13px; font-weight: 500; }
+.players { font-size: 11px; color: #888; margin-top: 2px; }
+.game-slot { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid #f5f5f0; }
+.game-slot:last-child { border-bottom: none; }
+.game-num { font-size: 11px; color: #bbb; min-width: 24px; }
+.game-teams { flex: 1; font-size: 13px; }
+.game-score { font-size: 15px; font-weight: 500; min-width: 48px; text-align: center; }
+.game-score.pending { color: #bbb; font-size: 12px; }
+
+/* International */
+.wc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.wc-round { border: 0.5px solid #e0e0d8; border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+.wc-round.done { background: #f5f5f0; }
+.wc-round.live { background: #e8f0fb; border-color: #b5d4f4; }
+.wc-round.upcoming { background: #fff; }
+.wc-round.finale { background: #1a1a1a; color: #fff; }
+.wc-round .rnd { font-size: 10px; color: #aaa; margin-bottom: 3px; }
+.wc-round.finale .rnd { color: #888; }
+.wc-round .city { font-weight: 500; font-size: 13px; margin-bottom: 2px; }
+.wc-round .date { font-size: 11px; color: #888; }
+.wc-round.finale .date { color: #aaa; }
+.wc-round a { color: #1a56a8; text-decoration: none; font-size: 11px; display: inline-block; margin-top: 4px; }
+.wc-round.finale a { color: #7ab3f0; }
+.int-section { margin-bottom: 20px; }
+.int-country-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin-bottom: 8px; cursor: pointer; user-select: none; }
+.int-country-header i { color: #aaa; font-size: 14px; transition: transform 0.2s; }
+.int-country-header.open i { transform: rotate(180deg); }
+.int-links { display: none; }
+.int-links.open { display: block; }
+.int-link-group { margin-bottom: 10px; }
+.int-link-group-title { font-size: 11px; color: #aaa; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+.link-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.result-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #1a56a8; background: #f0f4fb; border: 0.5px solid #c8d8f0; border-radius: 5px; padding: 3px 9px; text-decoration: none; white-space: nowrap; }
+.result-link:hover { background: #dce8f8; }
+.result-link.done { color: #2a7a1e; background: #f0faf0; border-color: #b8ddb8; }
+.result-link.upcoming { color: #888; background: #f5f5f0; border-color: #ddd; }
+.vorschau-card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; }
+.vorschau-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.vorschau-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid #f5f5f0; font-size: 12px; }
+.vorschau-row:last-child { border-bottom: none; }
+.vorschau-time { color: #888; min-width: 110px; flex-shrink: 0; }
+.bundesland-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px; }
+.bundesland-card { border: 0.5px solid #e0e0d8; border-radius: 8px; padding: 10px 12px; background: #fff; }
+.bundesland-name { font-size: 12px; font-weight: 500; margin-bottom: 6px; color: #333; }
+.bl-links { display: flex; flex-direction: column; gap: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
+    Radball Europa
+  </div>
+  <nav>
+    <button class="active" onclick="showTab('ergebnisse',this)"><i class="ti ti-ball" aria-hidden="true"></i> Ergebnisse</button>
+    <button onclick="showTab('turniere',this)"><i class="ti ti-calendar" aria-hidden="true"></i> Turniere</button>
+    <button onclick="showTab('tabellen',this)"><i class="ti ti-list-numbers" aria-hidden="true"></i> Tabellen</button>
+    <button onclick="showTab('international',this)"><i class="ti ti-world" aria-hidden="true"></i> International</button>
+  </nav>
+</div>
+
+<div class="container">
+
+<!-- ERGEBNISSE -->
+<div id="ergebnisse" class="tab-content active">
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCountry('all',this)">Alle Länder</button>
+    <button class="filter-btn" onclick="filterCountry('de',this)">🇩🇪 Deutschland</button>
+    <button class="filter-btn" onclick="filterCountry('ch',this)">🇨🇭 Schweiz</button>
+    <button class="filter-btn" onclick="filterCountry('at',this)">🇦🇹 Österreich</button>
+    <button class="filter-btn" onclick="filterCountry('fr',this)">🇫🇷 Frankreich</button>
+    <button class="filter-btn" onclick="filterCountry('cz',this)">🇨🇿 Tschechien</button>
+  </div>
+  <div class="section-header">
+    <div class="section-title" style="margin:0">Live & Heute</div>
+    <span style="font-size:12px;color:#e03535"><span class="live-dot"></span>2 live</span>
+  </div>
+  <div class="card" style="margin-bottom:16px" data-country="de">
+    <div class="match-row">
+      <div class="match-teams">🇩🇪 <span>RSV Denkingen</span><span class="vs">–</span><span>RC Waldshut</span></div>
+      <div class="score"><span class="live-dot"></span>3<span class="score-sep">:</span>2</div>
+      <div class="match-meta">BL Süd · Rd. 14</div>
+    </div>
+    <div class="match-row">
+      <div class="match-teams">🇨🇭 <span>RV Frenkendorf</span><span class="vs">–</span><span>RV Wittnau</span></div>
+      <div class="score"><span class="live-dot"></span>1<span class="score-sep">:</span>1</div>
+      <div class="match-meta">NLA · Rd. 11</div>
+    </div>
+  </div>
+  <div class="section-title">Letzte Ergebnisse – 18./19. April 2026</div>
+  <div id="results-list">
+    <div class="card" data-country="de">
+      <div class="country-label">🇩🇪 <span>Deutschland – 1. Bundesliga</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Michael Birkner / Robert Mlady</span><span class="vs">auf</span><span>Platz 1</span></div>
+        <div class="score" style="font-size:13px;color:#c8900a">🏆</div>
+        <div class="match-meta"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga1_Radball_2026.html" target="_blank" style="color:#1a56a8;font-size:11px">Tabelle →</a></div>
+      </div>
+    </div>
+    <div class="card" data-country="de">
+      <div class="country-label">🇩🇪 <span>Deutschland – Bundespokal Frauen</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Judith Wolf / Danielle Holzer</span><span class="vs">auf</span><span>Platz 1</span></div>
+        <div class="score" style="font-size:13px;color:#c8900a">🏆</div>
+        <div class="match-meta"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundespokal_Radball_Frauen_2026.html" target="_blank" style="color:#1a56a8;font-size:11px">Tabelle →</a></div>
+      </div>
+    </div>
+    <div class="card" data-country="ch">
+      <div class="country-label">🇨🇭 <span>Schweiz – Nationalliga A Qualifikation</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Björn Vogel / Rafael Artho</span><span class="vs">auf</span><span>Platz 1</span></div>
+        <div class="score" style="font-size:13px;color:#c8900a">🏆</div>
+        <div class="match-meta"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLA_Qualifikation_2026.html" target="_blank" style="color:#1a56a8;font-size:11px">Tabelle →</a></div>
+      </div>
+    </div>
+    <div class="card" data-country="ch">
+      <div class="country-label">🇨🇭 <span>Schweiz – 3. Liga Qualifikation</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Pedro Carvalho / Rico Götschmann</span><span class="vs">auf</span><span>Platz 1</span></div>
+        <div class="score" style="font-size:13px;color:#c8900a">🏆</div>
+        <div class="match-meta"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga3_Qualifikation_2026.htm" target="_blank" style="color:#1a56a8;font-size:11px">Tabelle →</a></div>
+      </div>
+    </div>
+    <div class="card" data-country="ch">
+      <div class="country-label">🇨🇭 <span>Schweiz – U11 Qualifikation</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Loan Finn Hug / Janick Berner</span><span class="vs">auf</span><span>Platz 1</span></div>
+        <div class="score" style="font-size:13px;color:#c8900a">🏆</div>
+        <div class="match-meta"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U11_Qualifikation_2026.html" target="_blank" style="color:#1a56a8;font-size:11px">Tabelle →</a></div>
+      </div>
+    </div>
+    <div class="card" data-country="de">
+      <div class="country-label">🇩🇪 <span>U19 Länderkampf GER–AUT–SUI in Neresheim</span></div>
+      <div class="match-row">
+        <div class="match-teams"><span>Deutschland</span><span class="vs">51 Pkt.</span><span>🏆</span></div>
+        <div class="score" style="font-size:13px"></div>
+        <div class="match-meta" style="font-size:11px;color:#888">CH: 22 · AT: 14</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TURNIERE -->
+<div id="turniere" class="tab-content">
+  <div id="tour-detail-view" style="display:none">
+    <button class="back-btn" onclick="showTourList()"><i class="ti ti-arrow-left" aria-hidden="true"></i> Zurück</button>
+    <div class="tour-detail">
+      <div class="tour-detail-header">
+        <div class="org">Bund Deutscher Radfahrer e.V.</div>
+        <h2>Halbfinale Quali U13 DM 2026 – Gruppe 1 in Demmin</h2>
+        <div class="meta-row">
+          <span><i class="ti ti-calendar" aria-hidden="true"></i> Samstag, 9. Mai 2026</span>
+          <span><i class="ti ti-clock" aria-hidden="true"></i> 14:00 Uhr</span>
+          <span><i class="ti ti-map-pin" aria-hidden="true"></i> Sporthalle Demmin, Jahnstraße 9</span>
+        </div>
+      </div>
+      <div class="quali-note"><i class="ti ti-trophy" aria-hidden="true"></i> Die ersten 2 Mannschaften qualifizieren sich für das Finale am 30. und 31. Mai 2026</div>
+      <div class="detail-section">
+        <div class="section-title">Tabelle – 1. Spieltag</div>
+        <table class="standings-table">
+          <thead><tr><th>#</th><th>Verein</th><th>Vbd.</th><th style="text-align:center">Sp</th><th style="text-align:center">S</th><th style="text-align:center">U</th><th style="text-align:center">N</th><th style="text-align:center">Tore</th><th style="text-align:center">Pkt</th></tr></thead>
+          <tbody>
+            <tr><td class="rank top">1</td><td>RV Lüblow</td><td style="color:#aaa;font-size:11px">MEV</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+            <tr><td class="rank top">2</td><td>RVW Wimsheim</td><td style="color:#aaa;font-size:11px">WTB</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+            <tr><td class="rank">3</td><td>RSV Zscherben</td><td style="color:#aaa;font-size:11px">SAH</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+            <tr><td class="rank">4</td><td>RKV Bischberg</td><td style="color:#aaa;font-size:11px">BAY</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+            <tr><td class="rank">5</td><td>RMSV Klein-Gerau</td><td style="color:#aaa;font-size:11px">HES</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+            <tr><td class="rank">6</td><td>RV Edelweiß Fraureuth</td><td style="color:#aaa;font-size:11px">SAC</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0:0</td><td class="pts" style="text-align:center">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="detail-section">
+        <div class="section-title">Teilnehmer</div>
+        <div class="team-grid">
+          <div class="team-entry"><span class="verband-badge">MEV</span><div><div class="team-name">RV Lüblow 1</div><div class="players">Ludwig Badel / Louis Ihlenfeld</div></div></div>
+          <div class="team-entry"><span class="verband-badge">SAH</span><div><div class="team-name">RSV Zscherben 1</div><div class="players">Cedric Kern / Mateo Hirschfeld</div></div></div>
+          <div class="team-entry"><span class="verband-badge">HES</span><div><div class="team-name">RMSV Klein-Gerau 2</div><div class="players">Emilio Garbisch / Lorenzo Garbisch</div></div></div>
+          <div class="team-entry"><span class="verband-badge">SAC</span><div><div class="team-name">RV Edelweiß Fraureuth</div><div class="players">Noah Teichmann / Alois Hupfer</div></div></div>
+          <div class="team-entry"><span class="verband-badge">BAY</span><div><div class="team-name">RKB Bischberg</div><div class="players">Nils Walther / Luca Krug</div></div></div>
+          <div class="team-entry"><span class="verband-badge">WTB</span><div><div class="team-name">RVW Wimsheim</div><div class="players">Raphael Böhringer / Niklas Engel</div></div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="section-title">Spielplan</div>
+        <div class="game-slot"><span class="game-num">1</span><span class="game-teams">RV Lüblow – RVW Wimsheim</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">2</span><span class="game-teams">RSV Zscherben – RKV Bischberg</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">3</span><span class="game-teams">RMSV Klein-Gerau – RV Fraureuth</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">4</span><span class="game-teams">RV Lüblow – RSV Zscherben</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">5</span><span class="game-teams">RVW Wimsheim – RMSV Klein-Gerau</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">6</span><span class="game-teams">RKV Bischberg – RV Fraureuth</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">7</span><span class="game-teams">RV Lüblow – RMSV Klein-Gerau</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">8</span><span class="game-teams">RSV Zscherben – RV Fraureuth</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">9</span><span class="game-teams">RVW Wimsheim – RKV Bischberg</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">10</span><span class="game-teams">RV Lüblow – RKV Bischberg</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">11</span><span class="game-teams">RSV Zscherben – RMSV Klein-Gerau</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">12</span><span class="game-teams">RVW Wimsheim – RV Fraureuth</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">13</span><span class="game-teams">RV Lüblow – RV Fraureuth</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">14</span><span class="game-teams">RSV Zscherben – RVW Wimsheim</span><span class="game-score pending">– : –</span></div>
+        <div class="game-slot"><span class="game-num">15</span><span class="game-teams">RKV Bischberg – RMSV Klein-Gerau</span><span class="game-score pending">– : –</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tour-list-view">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTour('all',this)">Alle</button>
+      <button class="filter-btn" onclick="filterTour('wm',this)">🌍 WM / EM</button>
+      <button class="filter-btn" onclick="filterTour('nat',this)">🏆 National</button>
+      <button class="filter-btn" onclick="filterTour('int',this)">🌐 International</button>
+    </div>
+    <div class="section-title">Vorschau 25./26. April 2026</div>
+    <div class="vorschau-card" style="margin-bottom:14px">
+      <div class="vorschau-title">🇩🇪 Deutschland – 2. Bundesliga</div>
+      <div class="vorschau-row"><span class="vorschau-time">Sa. 25. April, 18:00</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Mitte_2026.html" class="result-link" target="_blank">2. BL Mitte – Kemnat/Waldrems</a></div></div>
+      <div class="vorschau-row"><span class="vorschau-time">Sa. 25. April, 16:00</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Nord_2026.html" class="result-link" target="_blank">2. BL Nord – Niederlauterstein/Leipzig</a></div></div>
+      <div class="vorschau-row"><span class="vorschau-time">Sa. 25. April, 18:00</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Sued_2026.html" class="result-link" target="_blank">2. BL Süd – Gärtringen/Elzach</a></div></div>
+    </div>
+    <div class="vorschau-card" style="margin-bottom:14px">
+      <div class="vorschau-title">🇨🇭 Schweiz – Qualifikation Schweizer Meisterschaft</div>
+      <div class="vorschau-row"><span class="vorschau-time">So. 26. April, 13:30</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga1_Qualifikation_2026.html" class="result-link" target="_blank">1. Liga Quali – Sirnach</a></div></div>
+      <div class="vorschau-row"><span class="vorschau-time">Sa. 25. April, 13:30</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga2_Qualifikation_2026.html" class="result-link" target="_blank">2. Liga Quali – Sirnach</a></div></div>
+      <div class="vorschau-row"><span class="vorschau-time">So. 26. April, 13:00</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U17_U19_Qualifikation_2026.html" class="result-link" target="_blank">U17/U19 Quali – Mosnang</a></div></div>
+      <div class="vorschau-row"><span class="vorschau-time">So. 26. April, 10:00</span><div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U15_Qualifikation_2026.html" class="result-link" target="_blank">U15 Quali – Bremgarten/Schäftland</a></div></div>
+    </div>
+
+    <div class="section-title">Mai – September 2026</div>
+    <div id="tour-list">
+      <div class="tournament-card" data-type="nat" onclick="showTourDetail()" style="cursor:pointer">
+        <div class="date-box" style="background:#e8f0fb"><div class="date-day" style="color:#1a56a8">09</div><div class="date-mon" style="color:#1a56a8">MAI</div></div>
+        <div><div class="tour-name">Halbfinale Quali U13 DM 2026 – Gruppe 1</div><div class="tour-meta">🇩🇪 Demmin &nbsp;·&nbsp; <span class="badge badge-nat">National</span> &nbsp;·&nbsp; <span style="color:#1a56a8;font-size:11px">Details →</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="int">
+        <div class="date-box"><div class="date-day">17</div><div class="date-mon">MAI</div></div>
+        <div><div class="tour-name">Internationales Hallenradball-Turnier Sursee</div><div class="tour-meta">🇨🇭 Sursee &nbsp;·&nbsp; <span class="badge badge-int">International</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="nat">
+        <div class="date-box"><div class="date-day">30</div><div class="date-mon">MAI</div></div>
+        <div><div class="tour-name">Deutsche Meisterschaft U13 & U15 – Finale</div><div class="tour-meta">🇩🇪 Duderstadt &nbsp;·&nbsp; <span class="badge badge-nat">National</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="nat">
+        <div class="date-box"><div class="date-day">31</div><div class="date-mon">MAI</div></div>
+        <div><div class="tour-name">Österreichische Meisterschaft – Finale</div><div class="tour-meta">🇦🇹 Wieselburg &nbsp;·&nbsp; <span class="badge badge-nat">National</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="int">
+        <div class="date-box"><div class="date-day">07</div><div class="date-mon">JUN</div></div>
+        <div><div class="tour-name">Grand Prix du Haut-Rhin</div><div class="tour-meta">🇫🇷 Mulhouse &nbsp;·&nbsp; <span class="badge badge-int">International</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="wm">
+        <div class="date-box" style="background:#e8f0fb"><div class="date-day" style="color:#1a56a8">29</div><div class="date-mon" style="color:#1a56a8">AUG</div></div>
+        <div><div class="tour-name">UCI Weltcup 2026 – 4. Runde</div><div class="tour-meta">🇩🇪 Hähnlein &nbsp;·&nbsp; <span class="badge badge-wm">Weltcup</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="wm">
+        <div class="date-box" style="background:#e8f0fb"><div class="date-day" style="color:#1a56a8">12</div><div class="date-mon" style="color:#1a56a8">SEP</div></div>
+        <div><div class="tour-name">UCI Weltcup 2026 – 5. Runde</div><div class="tour-meta">🇩🇪 Großkoschen &nbsp;·&nbsp; <span class="badge badge-wm">Weltcup</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="wm">
+        <div class="date-box" style="background:#edfae6"><div class="date-day" style="color:#2a7a1e">16</div><div class="date-mon" style="color:#2a7a1e">OKT</div></div>
+        <div><div class="tour-name">UCI Indoor Cycling Weltmeisterschaft 2026</div><div class="tour-meta">🇬🇧 Derby, Großbritannien &nbsp;·&nbsp; <span class="badge badge-em">WM</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="wm">
+        <div class="date-box" style="background:#e8f0fb"><div class="date-day" style="color:#1a56a8">21</div><div class="date-mon" style="color:#1a56a8">NOV</div></div>
+        <div><div class="tour-name">UCI Weltcup 2026 – 7. Runde</div><div class="tour-meta">🇨🇭 Mosnang &nbsp;·&nbsp; <span class="badge badge-wm">Weltcup</span></div></div>
+      </div>
+      <div class="tournament-card" data-type="wm">
+        <div class="date-box" style="background:#1a1a1a"><div class="date-day" style="color:#fff">12</div><div class="date-mon" style="color:#888">DEZ</div></div>
+        <div><div class="tour-name">UCI Weltcup 2026 – Finale</div><div class="tour-meta">🇨🇭 Sulgen &nbsp;·&nbsp; <span class="badge badge-wm">Weltcup Finale</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABELLEN -->
+<div id="tabellen" class="tab-content">
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="switchLeague('de',this)">🇩🇪 Deutschland</button>
+    <button class="filter-btn" onclick="switchLeague('ch',this)">🇨🇭 Schweiz</button>
+    <button class="filter-btn" onclick="switchLeague('at',this)">🇦🇹 Österreich</button>
+    <button class="filter-btn" onclick="switchLeague('fr',this)">🇫🇷 Frankreich</button>
+  </div>
+  <div id="table-de">
+    <div class="card"><div class="section-title" style="margin-bottom:10px">1. Bundesliga – Saison 2025/26</div>
+      <table class="standings-table"><thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>
+        <tr><td class="rank top">1</td><td>RSV Muggensturm</td><td>13</td><td>11</td><td>1</td><td>1</td><td>62:28</td><td class="pts">34</td></tr>
+        <tr><td class="rank top">2</td><td>RSV Denkingen</td><td>14</td><td>10</td><td>2</td><td>2</td><td>58:33</td><td class="pts">32</td></tr>
+        <tr><td class="rank top">3</td><td>RSC Dittigheim</td><td>13</td><td>8</td><td>3</td><td>2</td><td>49:31</td><td class="pts">27</td></tr>
+        <tr><td class="rank">4</td><td>RV Bietigheim</td><td>13</td><td>7</td><td>2</td><td>4</td><td>44:38</td><td class="pts">23</td></tr>
+        <tr><td class="rank">5</td><td>RC Waldshut</td><td>14</td><td>5</td><td>3</td><td>6</td><td>41:47</td><td class="pts">18</td></tr>
+        <tr><td class="rank">6</td><td>RC Steißlingen</td><td>13</td><td>4</td><td>2</td><td>7</td><td>37:50</td><td class="pts">14</td></tr>
+        <tr><td class="rank">7</td><td>RV Altdorf</td><td>13</td><td>2</td><td>1</td><td>10</td><td>29:58</td><td class="pts">7</td></tr>
+        <tr><td class="rank">8</td><td>RV Hemsbach</td><td>13</td><td>1</td><td>0</td><td>12</td><td>18:72</td><td class="pts">3</td></tr>
+      </tbody></table>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#888">Vollständige Ergebnisse: <a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga1_Radball_2026.html" target="_blank" style="color:#1a56a8">1. Bundesliga →</a></div>
+  </div>
+  <div id="table-ch" style="display:none">
+    <div class="card"><div class="section-title" style="margin-bottom:10px">Nationalliga A – Saison 2025/26</div>
+      <table class="standings-table"><thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>
+        <tr><td class="rank top">1</td><td>RV Sursee</td><td>10</td><td>9</td><td>0</td><td>1</td><td>55:18</td><td class="pts">27</td></tr>
+        <tr><td class="rank top">2</td><td>RV Rickenbach</td><td>10</td><td>7</td><td>1</td><td>2</td><td>48:24</td><td class="pts">22</td></tr>
+        <tr><td class="rank top">3</td><td>RV Frenkendorf</td><td>11</td><td>6</td><td>2</td><td>3</td><td>40:28</td><td class="pts">20</td></tr>
+        <tr><td class="rank">4</td><td>RV Wittnau</td><td>10</td><td>4</td><td>1</td><td>5</td><td>32:38</td><td class="pts">13</td></tr>
+        <tr><td class="rank">5</td><td>RV Oftringen</td><td>10</td><td>2</td><td>0</td><td>8</td><td>21:48</td><td class="pts">6</td></tr>
+        <tr><td class="rank">6</td><td>RV Aarau</td><td>11</td><td>0</td><td>2</td><td>9</td><td>15:55</td><td class="pts">2</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="table-at" style="display:none">
+    <div class="card"><div class="section-title" style="margin-bottom:10px">1. Liga Österreich – Saison 2025/26</div>
+      <table class="standings-table"><thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>
+        <tr><td class="rank top">1</td><td>RSV Korneuburg</td><td>12</td><td>10</td><td>1</td><td>1</td><td>60:22</td><td class="pts">31</td></tr>
+        <tr><td class="rank top">2</td><td>RV Wieselburg</td><td>12</td><td>8</td><td>2</td><td>2</td><td>52:30</td><td class="pts">26</td></tr>
+        <tr><td class="rank top">3</td><td>RV Steyr</td><td>12</td><td>6</td><td>1</td><td>5</td><td>41:38</td><td class="pts">19</td></tr>
+        <tr><td class="rank">4</td><td>RV Grieskirchen</td><td>12</td><td>4</td><td>2</td><td>6</td><td>35:44</td><td class="pts">14</td></tr>
+        <tr><td class="rank">5</td><td>RC Linz</td><td>12</td><td>2</td><td>1</td><td>9</td><td>28:60</td><td class="pts">7</td></tr>
+        <tr><td class="rank">6</td><td>RV Salzburg</td><td>12</td><td>1</td><td>1</td><td>10</td><td>18:62</td><td class="pts">4</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="table-fr" style="display:none">
+    <div class="card"><div class="section-title" style="margin-bottom:10px">Championnat de France Élite – 2025/26</div>
+      <table class="standings-table"><thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>
+        <tr><td class="rank top">1</td><td>VC Wittenheim</td><td>11</td><td>8</td><td>2</td><td>1</td><td>50:20</td><td class="pts">26</td></tr>
+        <tr><td class="rank top">2</td><td>VC Mulhouse</td><td>11</td><td>7</td><td>2</td><td>2</td><td>44:25</td><td class="pts">23</td></tr>
+        <tr><td class="rank top">3</td><td>VC Thann</td><td>11</td><td>6</td><td>1</td><td>4</td><td>38:30</td><td class="pts">19</td></tr>
+        <tr><td class="rank">4</td><td>RC Colmar</td><td>11</td><td>3</td><td>2</td><td>6</td><td>28:38</td><td class="pts">11</td></tr>
+        <tr><td class="rank">5</td><td>VC Strasbourg</td><td>11</td><td>1</td><td>1</td><td>9</td><td>18:55</td><td class="pts">4</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- INTERNATIONAL -->
+<div id="international" class="tab-content">
+
+  <div class="section-title">UCI Cycle-Ball World Cup 2026</div>
+  <div class="wc-grid" style="margin-bottom:20px">
+    <div class="wc-round done"><div class="rnd">1. Runde</div><div class="city">Kobe</div><div class="date">22. Feb. 2026 · 🇯🇵</div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Kobe_2026.htm" target="_blank">Ergebnisse Men →</a><br><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Kobe_Damen_2026.htm" target="_blank">Ergebnisse Women →</a></div>
+    <div class="wc-round done"><div class="rnd">2. Runde</div><div class="city">Erzhausen</div><div class="date">21. Mär. 2026 · 🇩🇪</div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Erzhausen_2026.htm" target="_blank">Ergebnisse →</a></div>
+    <div class="wc-round live"><div class="rnd">3. Runde <span class="live-dot"></span></div><div class="city">Baj</div><div class="date">9. Mai 2026 · 🇭🇺</div><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Baj_2026.htm" target="_blank">Spielplan →</a></div>
+    <div class="wc-round upcoming"><div class="rnd">4. Runde</div><div class="city">Hähnlein</div><div class="date">29. Aug. 2026 · 🇩🇪</div></div>
+    <div class="wc-round upcoming"><div class="rnd">5. Runde</div><div class="city">Großkoschen</div><div class="date">12. Sep. 2026 · 🇩🇪</div></div>
+    <div class="wc-round upcoming"><div class="rnd">6. Runde</div><div class="city">Prechtal</div><div class="date">10. Okt. 2026 · 🇩🇪</div></div>
+    <div class="wc-round upcoming"><div class="rnd">7. Runde</div><div class="city">Mosnang</div><div class="date">21. Nov. 2026 · 🇨🇭</div></div>
+    <div class="wc-round finale"><div class="rnd">Finale</div><div class="city">Sulgen</div><div class="date">12. Dez. 2026 · 🇨🇭</div></div>
+  </div>
+  <div style="margin-bottom:6px"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Punktestand_2026.htm" class="result-link" target="_blank">Punktestand Men 2026</a> <a href="https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Punktestand_Women_2026.htm" class="result-link" target="_blank">Punktestand Women 2026</a></div>
+
+  <div style="margin:20px 0 10px"><div class="section-title">Meisterschaften & Ergebnisse nach Land</div></div>
+
+  <!-- Belgien -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇧🇪 Belgien <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/Liga1_2026.html" class="result-link done" target="_blank">1. Liga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/KampioenschapvanVlaanderen_Elite_2026.htm" class="result-link done" target="_blank">Kampioenschap v. Vlaanderen</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">U19</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U19_2026.html" class="result-link done" target="_blank">U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U19_Finale_2026.htm" class="result-link done" target="_blank">Finale U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U19_EM_Selektion_2026.html" class="result-link done" target="_blank">EM Selektion U19</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">U16 / U13</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U16_2026.htm" class="result-link done" target="_blank">U16</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U16_Finale_2026.htm" class="result-link done" target="_blank">Finale U16</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U13_2026.html" class="result-link done" target="_blank">U13</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U13_Finale_2026.htm" class="result-link done" target="_blank">Finale U13</a></div></div>
+    </div>
+  </div>
+
+  <!-- Deutschland -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇩🇪 Deutschland <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Bundesliga Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga1_Radball_2026.html" class="result-link done" target="_blank">1. Bundesliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Mitte_2026.html" class="result-link" target="_blank">2. BL Mitte</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Nord_2026.html" class="result-link" target="_blank">2. BL Nord</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Sued_2026.html" class="result-link" target="_blank">2. BL Süd</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Frauen</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundespokal_Radball_Frauen_2026.html" class="result-link done" target="_blank">Bundespokal Frauen</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundespokal_Radball_Frauen_U19_2026.html" class="result-link" target="_blank">Bundespokal Frauen U19</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Deutschlandpokal Elite</div><div class="link-row">
+        <span style="font-size:11px;color:#888">Vorrunde:</span>
+        <a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe1_2026.html" class="result-link done" target="_blank">Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe2_2026.html" class="result-link done" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe3_2026.html" class="result-link done" target="_blank">Gr.3</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe4_2026.html" class="result-link done" target="_blank">Gr.4</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe5_2026.html" class="result-link done" target="_blank">Gr.5</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe6_2026.html" class="result-link done" target="_blank">Gr.6</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe7_2026.html" class="result-link done" target="_blank">Gr.7</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe8_2026.html" class="result-link done" target="_blank">Gr.8</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Vorrunde_Gruppe9_2026.html" class="result-link done" target="_blank">Gr.9</a>
+      </div><div class="link-row"><span style="font-size:11px;color:#888">Viertelfinale:</span><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Viertelfinale_Gruppe1_2026.html" class="result-link done" target="_blank">Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Viertelfinale_Gruppe2_2026.html" class="result-link done" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Viertelfinale_Gruppe3_2026.html" class="result-link done" target="_blank">Gr.3</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Viertelfinale_Gruppe4_2026.html" class="result-link done" target="_blank">Gr.4</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Viertelfinale_Gruppe5_2026.html" class="result-link done" target="_blank">Gr.5</a></div>
+      <div class="link-row"><span style="font-size:11px;color:#888">Halbfinale:</span><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Halbfinale_Gruppe1_2026.html" class="result-link" target="_blank">Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/DP_Pokal_Radball_Halbfinale_Gruppe3_2026.html" class="result-link" target="_blank">Gr.3</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">DM Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Cup/EM_Qualifikation_U19_2026.html" class="result-link" target="_blank">EM Quali U19</a></div>
+        <div class="link-row"><span style="font-size:11px;color:#888">U19 HF:</span><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe1_2026.html" class="result-link" target="_blank">Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe3_2026.html" class="result-link" target="_blank">Gr.3</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe4_2026.html" class="result-link" target="_blank">Gr.4</a></div>
+        <div class="link-row"><span style="font-size:11px;color:#888">U13 HF:</span><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe1_2026.html" class="result-link done" target="_blank">Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe3_2026.html" class="result-link" target="_blank">Gr.3</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe4_2026.html" class="result-link" target="_blank">Gr.4</a></div>
+      </div>
+      <div class="int-link-group"><div class="int-link-group-title">Bundesländer – Elite</div>
+        <div class="bundesland-grid">
+          <div class="bundesland-card"><div class="bundesland-name">Bayern</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bayern_Meisterschaft_Elite_2026.htm" class="result-link" target="_blank" style="margin-bottom:2px">Bayer. Meisterschaft</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bayernliga_Elite_2026.html" class="result-link" target="_blank">Bayernliga Elite</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Berlin-Brandenburg</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Berlin_Brandenburg_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Berlin_Brandenburg_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Hessen</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Hessen_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Hessen_Verbandsliga_Nord_2026.html" class="result-link" target="_blank">VBL Nord</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Hessen_Verbandsliga_Sued_2026.html" class="result-link" target="_blank">VBL Süd</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">NRW</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/NRW_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/NRW_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Sachsen</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Sachsen_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Sachsen_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Sachsen-Anhalt</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/SA_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/SA_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Thüringen</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Thueringen_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Thueringen_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Württemberg</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Wuerttemberg_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Wuerttemberg_Verbandsliga_Staffel1_2026.html" class="result-link" target="_blank">VBL St.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Wuerttemberg_Verbandsliga_Staffel2_2026.html" class="result-link" target="_blank">VBL St.2</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Niedersachsen</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Niedersachsen_Oberliga_2026.htm" class="result-link" target="_blank">Oberliga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Niedersachsen_Verbandsliga_2026.html" class="result-link" target="_blank">Verbandsliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Rheinland-Pfalz</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/RLP_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a></div></div>
+          <div class="bundesland-card"><div class="bundesland-name">Mecklenburg-VP</div><div class="bl-links"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Mecklenburg_Oberliga_2026.html" class="result-link" target="_blank">Oberliga</a></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frankreich -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇫🇷 Frankreich <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_Elite_2026.html" class="result-link done" target="_blank">Championnat de France Elite</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_Grand_Est_Liga1_2026.html" class="result-link" target="_blank">Grand Est Liga 1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_Grand_Est_Liga2_2026.html" class="result-link" target="_blank">Grand Est Liga 2</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Cup</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Cup/Coupe_Grand_Est_Elite_2026.htm" class="result-link" target="_blank">Coupe Grand Est Elite</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_U19_2026.html" class="result-link" target="_blank">Championnat France U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_Grand_Est_U19_2026.html" class="result-link" target="_blank">Grand Est U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_U15_2026.html" class="result-link" target="_blank">France U15</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_Grand_Est_U15_2026.html" class="result-link" target="_blank">Grand Est U15</a></div></div>
+    </div>
+  </div>
+
+  <!-- Österreich -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇦🇹 Österreich <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Meisterschaft/Liga1_2026.html" class="result-link" target="_blank">1. Liga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Cup/OE_Cup_Finale_2026.html" class="result-link" target="_blank">Österreich Cup Elite</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Vorarlberg Landesmeisterschaft</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Liga1_2026.html" class="result-link done" target="_blank">LM 1. Liga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Junioren_2026.html" class="result-link done" target="_blank">LM Junioren</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Jugend_2026.html" class="result-link done" target="_blank">LM Jugend</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_SchuelerA_2026.html" class="result-link done" target="_blank">LM Schüler A</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_SchuelerB_2026.html" class="result-link done" target="_blank">LM Schüler B</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_SchuelerC_2026.html" class="result-link done" target="_blank">LM Schüler C</a></div></div>
+    </div>
+  </div>
+
+  <!-- Schweiz -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇨🇭 Schweiz <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLA_Qualifikation_2026.html" class="result-link done" target="_blank">NLA Qualifikation</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLB_Qualifikation_2026.html" class="result-link" target="_blank">NLB Qualifikation</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLB_Final_Qualifikation_2026.html" class="result-link" target="_blank">NLB Finalqual.</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga1_Qualifikation_2026.html" class="result-link" target="_blank">1. Liga Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga2_Qualifikation_2026.html" class="result-link" target="_blank">2. Liga Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga3_Qualifikation_2026.htm" class="result-link done" target="_blank">3. Liga Quali</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Schweizer Cup</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Cup/Cup_Finale_2026.htm" class="result-link" target="_blank">Cup Finale</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Cup/Halbfinale_Gruppe1_2026.html" class="result-link" target="_blank">HF Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Cup/Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">HF Gr.2</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U17_U19_Qualifikation_2026.html" class="result-link" target="_blank">U17/U19 Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/EM_Ausscheidung_Junioren_2026.html" class="result-link" target="_blank">EM Ausscheidung U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/EM_Ausscheidung_Juniorinnen_2026.html" class="result-link" target="_blank">EM Ausscheidung U19 ♀</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U15_Qualifikation_2026.html" class="result-link" target="_blank">U15 Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U13_Qualifikation_2026.html" class="result-link" target="_blank">U13 Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U11_Qualifikation_2026.html" class="result-link done" target="_blank">U11 Quali</a></div></div>
+    </div>
+  </div>
+
+  <!-- Tschechien -->
+  <div class="int-section">
+    <div class="int-country-header" onclick="toggleCountry(this)">🇨🇿 Tschechien <i class="ti ti-chevron-down" aria-hidden="true"></i></div>
+    <div class="int-links">
+      <div class="int-link-group"><div class="int-link-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/Extraliga_Elite_2026.html" class="result-link" target="_blank">Extraliga Elite</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">U23 / Junioren</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/U23_MCR_Runde1_2026.html" class="result-link done" target="_blank">U23 Runde 1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/U23_MCR_Runde2_2026.html" class="result-link done" target="_blank">U23 Runde 2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/MCR_Finale_Junioren_2026.htm" class="result-link done" target="_blank">Junioren Finale</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/Junioren_Liga1_Runde1_2026.html" class="result-link done" target="_blank">Junioren Liga Rd.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/Junioren_Liga1_Runde2_2026.html" class="result-link done" target="_blank">Rd.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/Junioren_Liga1_Runde3_2026.html" class="result-link done" target="_blank">Rd.3</a></div></div>
+      <div class="int-link-group"><div class="int-link-group-title">Schüler Cup</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Cup/Zaci_Pohar_Finale_2026.htm" class="result-link done" target="_blank">Pohár žáků Finale</a></div></div>
+    </div>
+  </div>
+
+  <div style="margin-top:8px;font-size:11px;color:#aaa">Stand: 23.04.2026 · Quelle: vfh-muecheln.de/Radball.at</div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+function filterCountry(code, btn) {
+  document.querySelectorAll('.filter-bar .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#results-list .card').forEach(c => {
+    c.style.display = (code==='all' || c.dataset.country===code) ? 'block' : 'none';
+  });
+}
+function filterTour(type, btn) {
+  document.querySelectorAll('#tour-list-view .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#tour-list .tournament-card').forEach(c => {
+    c.style.display = (type==='all' || c.dataset.type===type) ? 'flex' : 'none';
+  });
+}
+function switchLeague(code, btn) {
+  document.querySelectorAll('#tabellen .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['de','ch','at','fr'].forEach(c => {
+    document.getElementById('table-'+c).style.display = (c===code) ? 'block' : 'none';
+  });
+}
+function showTourDetail() {
+  document.getElementById('tour-list-view').style.display = 'none';
+  document.getElementById('tour-detail-view').style.display = 'block';
+}
+function showTourList() {
+  document.getElementById('tour-detail-view').style.display = 'none';
+  document.getElementById('tour-list-view').style.display = 'block';
+}
+function toggleCountry(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>
