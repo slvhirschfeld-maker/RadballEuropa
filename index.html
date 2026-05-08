@@ -567,6 +567,8 @@ function toggleCountry(el) {
 }
 </script>
 <script>
+navigator.serviceWorker.getRegistrations()
+  .then(regs => regs.forEach(r => r.unregister()));
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register("/RadballEuropa/sw.js");
   }
