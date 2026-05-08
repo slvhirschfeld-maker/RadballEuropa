@@ -1,22 +1,40 @@
 {
   "name": "Radball Europa",
   "short_name": "Radball",
-  "description": "Ergebnisse & Turniere – Radball in Europa",
+  "description": "Ergebnisse, Turniere & Tabellen – Radball in Europa",
   "start_url": "/RadballEuropa/index.html",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#f5f5f0",
   "theme_color": "#1a1a1a",
-  "orientation": "portrait",
+  "lang": "de",
   "icons": [
     {
-      "src": "/RadballEuropa/icons/icon-192.png",
+      "src": "RadballEuropa/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/RadballEuropa/icons/icon-512.png",
+      "src": "RadballEuropa/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Ergebnisse",
+      "url": "/RadballEuropa/index.html#ergebnisse",
+      "description": "Aktuelle Ergebnisse anzeigen"
+    },
+    {
+      "name": "Turniere",
+      "url": "/RadballEuropa/index.html#turniere",
+      "description": "Kommende Turniere anzeigen"
+    }
+  ],
+  "categories": ["sports"],
+  "screenshots": []
 }
