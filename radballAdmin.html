@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radball Admin</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 14px; }
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 200px; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
+.sidebar-logo { padding: 16px; font-size: 14px; font-weight: 500; border-bottom: 1px solid #333; }
+.sidebar-logo span { font-size: 11px; color: #888; display: block; margin-top: 2px; }
+.nav-btn { display: flex; align-items: center; gap: 9px; padding: 10px 16px; background: none; border: none; border-left: 3px solid transparent; color: #aaa; cursor: pointer; font-size: 13px; width: 100%; text-align: left; transition: all 0.15s; }
+.nav-btn:hover { color: #fff; background: #222; }
+.nav-btn.active { color: #fff; background: #2a2a2a; border-left-color: #fff; }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; }
+.sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid #333; font-size: 12px; }
+.sidebar-footer .user-name { color: #fff; font-weight: 500; }
+.sidebar-footer .user-role { color: #888; font-size: 11px; margin-bottom: 8px; }
+.rt-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; transition: background 0.3s; }
+.rt-dot.on { background: #2a7a1e; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+/* Main */
+.main { flex: 1; padding: 22px; overflow-y: auto; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 17px; font-weight: 500; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* Setup Banner */
+#setup-banner { background: #1a56a8; color: #fff; padding: 12px 18px; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#setup-banner input { border: none; border-radius: 5px; padding: 6px 10px; font-size: 12px; flex: 1; min-width: 180px; outline: none; color: #1a1a1a; }
+#setup-banner button { background: #fff; color: #1a56a8; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; }
+#setup-banner.hidden { display: none; }
+
+/* Cards / Tables */
+.card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 14px 18px; margin-bottom: 12px; }
+.card-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.stat-card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 14px 16px; border-top: 3px solid var(--c); }
+.stat-val { font-size: 26px; font-weight: 500; color: var(--c); }
+.stat-lbl { font-size: 11px; color: #888; margin-top: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 7px 10px; font-size: 11px; color: #888; font-weight: 500; border-bottom: 0.5px solid #e8e8e0; background: #fafaf7; }
+td { padding: 9px 10px; border-bottom: 0.5px solid #f0f0e8; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafaf7; }
+
+/* Buttons */
+.btn { background: #1a1a1a; color: #fff; border: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.btn:hover { background: #333; }
+.btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 5px; }
+.btn-green { background: #2a7a1e; }
+.btn-green:hover { background: #236818; }
+.btn-red { background: #c0392b; }
+.btn-out { background: none; border: 0.5px solid #ddd; color: #555; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.btn-out:hover { border-color: #aaa; color: #1a1a1a; }
+.btn-out.sm { padding: 4px 9px; font-size: 12px; }
+
+/* Filter bar */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.filter-bar select, .filter-bar input { border: 0.5px solid #ddd; border-radius: 6px; padding: 6px 10px; font-size: 13px; background: #fff; outline: none; }
+
+/* Badges */
+.badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 500; display: inline-block; }
+
+/* Modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 18px; }
+.form-group { margin-bottom: 13px; }
+.form-label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+.form-input { border: 0.5px solid #ddd; border-radius: 6px; padding: 8px 11px; font-size: 13px; width: 100%; outline: none; }
+.form-input:focus { border-color: #1a1a1a; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* Score input */
+.score-box { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; }
+.score-input { border: 0.5px solid #ddd; border-radius: 8px; padding: 8px; font-size: 26px; font-weight: 500; width: 64px; text-align: center; outline: none; }
+.score-sep { font-size: 22px; color: #bbb; }
+.score-teams { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+
+/* Live dot */
+.live-dot { display: inline-block; width: 6px; height: 6px; background: #e03535; border-radius: 50%; margin-right: 4px; animation: pulse 1.2s infinite; }
+
+/* Toast */
+#toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 500; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+
+/* Loading */
+.loading { text-align: center; padding: 30px; color: #aaa; font-size: 13px; }
+.empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Setup Banner -->
+<div id="setup-banner">
+  <span style="font-weight:500;white-space:nowrap">⚙ Supabase</span>
+  <input id="sb-url" placeholder="https://xxxx.supabase.co" />
+  <input id="sb-key" placeholder="Anon Key (eyJh...)" type="password" />
+  <button onclick="connectSB()">Verbinden</button>
+  <button onclick="loadDemo()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)">Demo</button>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">⚙ Radball Admin<span id="sb-status">Nicht verbunden</span></div>
+    <button class="nav-btn active" onclick="nav('dashboard',this)"><span class="nav-icon">◉</span> Dashboard</button>
+    <button class="nav-btn" onclick="nav('matches',this)"><span class="nav-icon">⚽</span> Ergebnisse</button>
+    <button class="nav-btn" onclick="nav('tournaments',this)"><span class="nav-icon">🏆</span> Turniere</button>
+    <button class="nav-btn" onclick="nav('leagues',this)"><span class="nav-icon">📋</span> Ligen</button>
+    <button class="nav-btn" onclick="nav('clubs',this)"><span class="nav-icon">🏠</span> Vereine</button>
+    <button class="nav-btn" onclick="nav('worldcup',this)"><span class="nav-icon">🌍</span> Weltcup</button>
+    <button class="nav-btn" onclick="nav('users',this)"><span class="nav-icon">👤</span> Benutzer</button>
+    <div class="sidebar-footer">
+      <div class="user-name" id="user-name">–</div>
+      <div class="user-role" id="user-role">–</div>
+      <div style="font-size:11px;color:#666;margin-bottom:6px"><span class="rt-dot" id="rt-dot"></span>Realtime</div>
+      <button class="btn-out" style="font-size:11px;color:#aaa;border-color:#444;padding:4px 9px" onclick="logout()">Abmelden</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-title">Dashboard</div>
+      <div class="stats-grid" id="dash-stats">
+        <div class="stat-card" style="--c:#e03535"><div class="stat-val" id="stat-live">–</div><div class="stat-lbl">Live jetzt</div></div>
+        <div class="stat-card" style="--c:#1a56a8"><div class="stat-val" id="stat-open">–</div><div class="stat-lbl">Offen heute</div></div>
+        <div class="stat-card" style="--c:#6a30b8"><div class="stat-val" id="stat-tour">–</div><div class="stat-lbl">Turniere bald</div></div>
+        <div class="stat-card" style="--c:#2a7a1e"><div class="stat-val" id="stat-leagues">–</div><div class="stat-lbl">Aktive Ligen</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Schnellerfassung – Ausstehende Spiele</div>
+        <div id="dash-pending"><div class="loading">Lade…</div></div>
+      </div>
+    </div>
+
+    <!-- ERGEBNISSE -->
+    <div id="page-matches" class="page">
+      <div class="page-title">
+        Ergebnisse
+        <button class="btn" onclick="openMatchModal()">+ Spiel anlegen</button>
+      </div>
+      <div class="filter-bar">
+        <select id="filter-league" onchange="loadMatches()"><option value="">Alle Ligen</option></select>
+        <select id="filter-status" onchange="loadMatches()">
+          <option value="">Alle Status</option>
+          <option value="scheduled">Geplant</option>
+          <option value="live">Live</option>
+          <option value="finished">Beendet</option>
+          <option value="cancelled">Abgesagt</option>
+        </select>
+        <input id="filter-search" type="text" placeholder="Suche Verein…" oninput="renderMatches()" style="min-width:160px" />
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Status</th><th>Runde</th><th>Heim</th><th>Ergebnis</th><th>Auswärts</th><th>Datum</th><th>Liga</th><th></th>
+        </tr></thead>
+        <tbody id="matches-body"><tr><td colspan="8" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TURNIERE -->
+    <div id="page-tournaments" class="page">
+      <div class="page-title">
+        Turniere
+        <button class="btn" onclick="openTourModal()">+ Turnier anlegen</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Datum</th><th>Name</th><th>Ort</th><th>Kategorie</th><th>AK</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="tournaments-body"><tr><td colspan="7" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LIGEN -->
+    <div id="page-leagues" class="page">
+      <div class="page-title">
+        Ligen
+        <button class="btn" onclick="openLeagueModal()">+ Liga anlegen</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Land</th><th>Name</th><th>Kürzel</th><th>Level</th><th>AK</th><th>Saison</th><th>Aktiv</th><th></th>
+        </tr></thead>
+        <tbody id="leagues-body"><tr><td colspan="8" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VEREINE -->
+    <div id="page-clubs" class="page">
+      <div class="page-title">
+        Vereine
+        <button class="btn" onclick="openClubModal()">+ Verein anlegen</button>
+      </div>
+      <div class="filter-bar">
+        <input id="club-search" type="text" placeholder="Suche Verein…" oninput="renderClubs()" style="min-width:200px" />
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Name</th><th>Land</th><th>Verband</th><th>Stadt</th><th></th>
+        </tr></thead>
+        <tbody id="clubs-body"><tr><td colspan="5" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WELTCUP -->
+    <div id="page-worldcup" class="page">
+      <div class="page-title">UCI Weltcup 2025/26</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Runde</th><th>Stadt</th><th>Land</th><th>Datum</th><th>Status</th><th>Ergebnisse-Link</th><th></th>
+        </tr></thead>
+        <tbody id="wc-body"><tr><td colspan="7" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BENUTZER -->
+    <div id="page-users" class="page">
+      <div class="page-title">
+        Benutzer
+        <button class="btn" onclick="openUserModal()">+ Admin einladen</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr>
+          <th>Name</th><th>E-Mail</th><th>Rolle</th><th>Land</th><th>Aktiv</th><th></th>
+        </tr></thead>
+        <tbody id="users-body"><tr><td colspan="6" class="loading">Lade…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div id="modal-bg" class="modal-bg" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Minimaler Supabase-Client ────────────────────────────────
+let sb = null;
+
+function createSBClient(url, key) {
+  const h = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+  const base = url.replace(/\/$/, '') + '/rest/v1';
+  const authBase = url.replace(/\/$/, '') + '/auth/v1';
+
+  const client = {
+    _url: url, _key: key,
+    from(table) {
+      let _sel = '*', _fil = [], _ord = null, _lim = null;
+      const q = {
+        select(s) { _sel = s; return q; },
+        eq(c, v) { _fil.push(`${c}=eq.${encodeURIComponent(v)}`); return q; },
+        order(c, o={}) { _ord = `${c}.${o.ascending===false?'desc':'asc'}`; return q; },
+        limit(n) { _lim = n; return q; },
+        update(data) {
+          return { eq(c,v) {
+            return fetch(`${base}/${table}?${c}=eq.${v}`, {
+              method:'PATCH', headers:{ ...h, Prefer:'return=representation' },
+              body: JSON.stringify(data)
+            }).then(r=>r.json()).then(d=>({data:d,error:null})).catch(e=>({data:null,error:e}));
+          }};
+        },
+        insert(data) {
+          return fetch(`${base}/${table}`, {
+            method:'POST', headers:{ ...h, Prefer:'return=representation' },
+            body: JSON.stringify(data)
+          }).then(r=>r.json()).then(d=>({data:d,error:null})).catch(e=>({data:null,error:e}));
+        },
+        delete() {
+          return { eq(c,v) {
+            return fetch(`${base}/${table}?${c}=eq.${v}`, {
+              method:'DELETE', headers:h
+            }).then(()=>({error:null})).catch(e=>({error:e}));
+          }};
+        },
+        then(resolve) {
+          let u = `${base}/${table}?select=${encodeURIComponent(_sel)}`;
+          _fil.forEach(f => u += `&${f}`);
+          if (_ord) u += `&order=${_ord}`;
+          if (_lim) u += `&limit=${_lim}`;
+          fetch(u, { headers:h })
+            .then(r=>r.json())
+            .then(d=>resolve({data:Array.isArray(d)?d:[],error:null}))
+            .catch(e=>resolve({data:[],error:e}));
+        }
+      };
+      return q;
+    },
+    auth: {
+      async signInWithPassword({email, password}) {
+        try {
+          const r = await fetch(`${authBase}/token?grant_type=password`, {
+            method:'POST', headers:{ apikey:key, 'Content-Type':'application/json' },
+            body: JSON.stringify({email, password})
+          });
+          const d = await r.json();
+          if (d.error) return { data:null, error:d.error };
+          localStorage.setItem('rb_token', d.access_token);
+          localStorage.setItem('rb_user', JSON.stringify(d.user));
+          return { data:d, error:null };
+        } catch(e) { return { data:null, error:e }; }
+      },
+      async signOut() { localStorage.removeItem('rb_token'); localStorage.removeItem('rb_user'); },
+      getUser() {
+        const u = localStorage.getItem('rb_user');
+        return { data: { user: u ? JSON.parse(u) : null } };
+      }
+    },
+    channel(name) {
+      const subs = [];
+      const ch = {
+        on(ev, filter, cb) { subs.push({filter,cb}); return ch; },
+        subscribe(cb) {
+          try {
+            const ws = new WebSocket(`${url.replace(/\/$/, '').replace('https://','wss://').replace('http://','ws://')}/realtime/v1/websocket?apikey=${key}&vsn=1.0.0`);
+            ws.onopen = () => { cb&&cb('SUBSCRIBED'); document.getElementById('rt-dot').classList.add('on'); };
+            ws.onmessage = e => {
+              try { const m=JSON.parse(e.data); if(m.event==='postgres_changes') subs.forEach(s=>s.cb(m.payload)); } catch(_){}
+            };
+          } catch(_) {}
+          return ch;
+        }
+      };
+      return ch;
+    }
+  };
+  return client;
+}
+
+// ── State ────────────────────────────────────────────────────
+let allMatches=[], allLeagues=[], allClubs=[], allCountries=[], allTournaments=[], allWC=[], allUsers=[];
+let demoMode = false;
+
+// ── Demo-Daten ───────────────────────────────────────────────
+function loadDemo() {
+  demoMode = true;
+  document.getElementById('setup-banner').classList.add('hidden');
+  document.getElementById('sb-status').textContent = 'Demo-Modus';
+  document.getElementById('user-name').textContent = 'Demo Admin';
+  document.getElementById('user-role').textContent = 'superadmin';
+
+  allCountries = [
+    {id:1,code:'de',name:'Deutschland',flag:'🇩🇪'},{id:2,code:'ch',name:'Schweiz',flag:'🇨🇭'},
+    {id:3,code:'at',name:'Österreich',flag:'🇦🇹'},{id:4,code:'fr',name:'Frankreich',flag:'🇫🇷'},
+    {id:5,code:'cz',name:'Tschechien',flag:'🇨🇿'},{id:6,code:'be',name:'Belgien',flag:'🇧🇪'}
+  ];
+  allLeagues = [
+    {id:1,name:'1. Bundesliga',short_name:'BL1',level:1,age_group:'Elite',season:'2025/26',active:true,country_id:1,country:{code:'de',flag:'🇩🇪'}},
+    {id:2,name:'2. BL Mitte',short_name:'BL2-M',level:2,age_group:'Elite',season:'2025/26',active:true,country_id:1,country:{code:'de',flag:'🇩🇪'}},
+    {id:6,name:'Nationalliga A',short_name:'NLA',level:1,age_group:'Elite',season:'2025/26',active:true,country_id:2,country:{code:'ch',flag:'🇨🇭'}},
+    {id:11,name:'1. Liga Österreich',short_name:'L1-AT',level:1,age_group:'Elite',season:'2025/26',active:true,country_id:3,country:{code:'at',flag:'🇦🇹'}},
+    {id:12,name:'Championnat Elite',short_name:'CFE',level:1,age_group:'Elite',season:'2025/26',active:true,country_id:4,country:{code:'fr',flag:'🇫🇷'}},
+  ];
+  allClubs = [
+    {id:1,name:'RSV Muggensturm',city:'Muggensturm',country_id:1,country:{flag:'🇩🇪'},association:{code:'BAY'}},
+    {id:2,name:'RSV Denkingen',city:'Denkingen',country_id:1,country:{flag:'🇩🇪'},association:{code:'WTB'}},
+    {id:3,name:'RSC Dittigheim',city:'Dittigheim',country_id:1,country:{flag:'🇩🇪'},association:{code:'WTB'}},
+    {id:4,name:'RC Waldshut',city:'Waldshut',country_id:1,country:{flag:'🇩🇪'},association:{code:'WTB'}},
+    {id:5,name:'RV Sursee',city:'Sursee',country_id:2,country:{flag:'🇨🇭'},association:{code:'NLA'}},
+    {id:6,name:'RV Frenkendorf',city:'Frenkendorf',country_id:2,country:{flag:'🇨🇭'},association:{code:'NLA'}},
+    {id:7,name:'RSV Korneuburg',city:'Korneuburg',country_id:3,country:{flag:'🇦🇹'},association:{code:'NOE'}},
+    {id:8,name:'VC Wittenheim',city:'Wittenheim',country_id:4,country:{flag:'🇫🇷'},association:{code:'GRE'}},
+  ];
+  allMatches = [
+    {id:1,league_id:1,home:'RSV Muggensturm',away:'RSV Denkingen',home_score:5,away_score:3,match_date:'2026-05-03T18:00',status:'finished',round:13,league_name:'1. Bundesliga',flag:'🇩🇪'},
+    {id:2,league_id:1,home:'RSC Dittigheim',away:'RC Waldshut',home_score:4,away_score:2,match_date:'2026-05-03T16:00',status:'finished',round:13,league_name:'1. Bundesliga',flag:'🇩🇪'},
+    {id:3,league_id:1,home:'RC Waldshut',away:'RSV Denkingen',home_score:null,away_score:null,match_date:'2026-05-08T18:00',status:'live',round:14,league_name:'1. Bundesliga',flag:'🇩🇪'},
+    {id:4,league_id:6,home:'RV Sursee',away:'RV Frenkendorf',home_score:null,away_score:null,match_date:'2026-05-11T13:30',status:'scheduled',round:11,league_name:'Nationalliga A',flag:'🇨🇭'},
+    {id:5,league_id:11,home:'RSV Korneuburg',away:'RV Wieselburg',home_score:6,away_score:1,match_date:'2026-04-30T18:00',status:'finished',round:12,league_name:'1. Liga Österreich',flag:'🇦🇹'},
+  ];
+  allTournaments = [
+    {id:1,name:'U13 DM Halbfinale – Gruppe 1',city:'Demmin',start_date:'2026-05-09',category:'National',age_group:'U13',organizer:'BDR e.V.',country:{flag:'🇩🇪'}},
+    {id:2,name:'UCI Weltcup – 3. Runde',city:'Baj',start_date:'2026-05-09',category:'Weltcup',age_group:'Elite',organizer:'UCI',country:{flag:'🇭🇺'}},
+    {id:3,name:'UCI Weltcup – 4. Runde',city:'Hähnlein',start_date:'2026-08-29',category:'Weltcup',age_group:'Elite',organizer:'UCI',country:{flag:'🇩🇪'}},
+  ];
+  allWC = [
+    {id:1,round_number:1,city:'Kobe',round_date:'2026-02-22',status:'finished',results_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Kobe_2026.htm',country:{flag:'🇯🇵'}},
+    {id:2,round_number:2,city:'Erzhausen',round_date:'2026-03-21',status:'finished',results_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Erzhausen_2026.htm',country:{flag:'🇩🇪'}},
+    {id:3,round_number:3,city:'Baj',round_date:'2026-05-09',status:'live',results_url:null,country:{flag:'🇭🇺'}},
+    {id:4,round_number:4,city:'Hähnlein',round_date:'2026-08-29',status:'upcoming',results_url:null,country:{flag:'🇩🇪'}},
+    {id:5,round_number:5,city:'Großkoschen',round_date:'2026-09-12',status:'upcoming',results_url:null,country:{flag:'🇩🇪'}},
+    {id:6,round_number:6,city:'Prechtal',round_date:'2026-10-10',status:'upcoming',results_url:null,country:{flag:'🇩🇪'}},
+    {id:7,round_number:7,city:'Mosnang',round_date:'2026-11-21',status:'upcoming',results_url:null,country:{flag:'🇨🇭'}},
+    {id:8,round_number:8,city:'Sulgen',round_date:'2026-12-12',status:'upcoming',results_url:null,country:{flag:'🇨🇭'}},
+  ];
+  allUsers = [
+    {id:1,name:'Max Müller',email:'max@radball.de',role:'superadmin',country:'Alle',active:true},
+    {id:2,name:'Anna Schmidt',email:'anna@radball.ch',role:'country_admin',country:'🇨🇭 Schweiz',active:true},
+    {id:3,name:'Peter Wagner',email:'peter@radball.at',role:'country_admin',country:'🇦🇹 Österreich',active:true},
+  ];
+  renderAll();
+}
+
+// ── Supabase verbinden ───────────────────────────────────────
+async function connectSB() {
+  const url = 'https://btpohaqsqajmwztmrrcp.supabase.co/rest/v1/'; //document.getElementById('sb-url').value.trim();
+  const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';//document.getElementById('sb-key').value.trim();
+  if (!url || !key) { toast('Bitte URL und Key eingeben'); return; }
+  sb = createSBClient(url, key);
+  document.getElementById('sb-status').textContent = url.split('.')[0].replace('https://','');
+  document.getElementById('setup-banner').classList.add('hidden');
+  await loadAllFromSB();
+  setupRealtime();
+  toast('✓ Supabase verbunden');
+}
+
+async function loadAllFromSB() {
+  await Promise.all([loadLeagues(), loadClubs(), loadCountries()]);
+  await Promise.all([loadMatches(), loadTournaments(), loadWC(), loadUsers()]);
+  updateDash();
+}
+
+async function loadCountries() {
+  const {data} = await sb.from('countries').select('*').order('name');
+  allCountries = data || [];
+}
+async function loadLeagues() {
+  const {data} = await sb.from('leagues').select('*, country:countries(code,flag)').order('country_id').order('level');
+  allLeagues = data || [];
+  fillLeagueFilter();
+}
+async function loadClubs() {
+  const {data} = await sb.from('clubs').select('*, country:countries(flag), association:associations(code)').order('name');
+  allClubs = data || [];
+}
+async function loadMatches() {
+  const lid = document.getElementById('filter-league')?.value;
+  const st  = document.getElementById('filter-status')?.value;
+  let q = sb.from('matches').select(`
+    id, home_score, away_score, match_date, status, round,
+    league:leagues(id,name,country:countries(flag)),
+    home_team:teams!home_team_id(club:clubs(name)),
+    away_team:teams!away_team_id(club:clubs(name))
+  `).order('match_date',{ascending:false}).limit(100);
+  if (lid) q = q.eq('league_id', lid);
+  if (st)  q = q.eq('status', st);
+  const {data} = await q;
+  allMatches = (data||[]).map(m => ({
+    id: m.id, league_id: m.league?.id, league_name: m.league?.name,
+    flag: m.league?.country?.flag,
+    home: m.home_team?.club?.name, away: m.away_team?.club?.name,
+    home_score: m.home_score, away_score: m.away_score,
+    match_date: m.match_date, status: m.status, round: m.round
+  }));
+  renderMatches();
+  updateDash();
+}
+async function loadTournaments() {
+  const {data} = await sb.from('tournaments').select('*, country:countries(flag)').order('start_date');
+  allTournaments = (data||[]).map(t=>({...t, country:{flag:t.country?.flag}}));
+  renderTournaments();
+}
+async function loadWC() {
+  const {data} = await sb.from('worldcup_rounds').select('*, country:countries(flag)').eq('season','2025/26').order('round_number');
+  allWC = data || [];
+  renderWC();
+}
+async function loadUsers() {
+  const {data} = await sb.from('admin_profiles').select('*').order('name');
+  allUsers = data || [];
+  renderUsers();
+}
+
+// ── Realtime ─────────────────────────────────────────────────
+function setupRealtime() {
+  if (!sb) return;
+  sb.channel('admin-matches')
+    .on('postgres_changes',{event:'*',schema:'public',table:'matches'}, () => { loadMatches(); toast('🔴 Match aktualisiert'); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'tournaments'}, () => loadTournaments())
+    .subscribe(s => { if(s==='SUBSCRIBED') document.getElementById('rt-dot').classList.add('on'); });
+}
+
+// ── Render-Funktionen ────────────────────────────────────────
+function renderAll() {
+  fillLeagueFilter();
+  renderMatches(); renderTournaments(); renderLeagues();
+  renderClubs(); renderWC(); renderUsers(); updateDash();
+}
+
+function fillLeagueFilter() {
+  const sel = document.getElementById('filter-league');
+  if (!sel) return;
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Alle Ligen</option>' +
+    allLeagues.map(l=>`<option value="${l.id}"${l.id==val?' selected':''}>${l.country?.flag||''} ${l.name}</option>`).join('');
+}
+
+function updateDash() {
+  document.getElementById('stat-live').textContent   = allMatches.filter(m=>m.status==='live').length;
+  document.getElementById('stat-open').textContent   = allMatches.filter(m=>m.status==='scheduled').length;
+  document.getElementById('stat-tour').textContent   = allTournaments.filter(t=>new Date(t.start_date)>=new Date()).length;
+  document.getElementById('stat-leagues').textContent= allLeagues.filter(l=>l.active).length;
+  const pending = allMatches.filter(m=>m.status!=='finished'&&m.status!=='cancelled');
+  document.getElementById('dash-pending').innerHTML = pending.length
+    ? pending.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid #f5f5f0;font-size:13px">
+        ${m.status==='live'?'<span class="live-dot"></span>':'<span style="width:10px"></span>'}
+        <span style="flex:1"><b>${m.home||'?'}</b> – <b>${m.away||'?'}</b></span>
+        <span style="color:#888;font-size:12px">${(m.match_date||'').split('T')[0]}</span>
+        <span class="badge" style="${badgeStyle(m.status)}">${statusLabel(m.status)}</span>
+        <button class="btn btn-sm" onclick='openScoreModal(${JSON.stringify(m)})'>✏️ Eintragen</button>
+      </div>`).join('')
+    : '<div class="empty">Keine offenen Spiele</div>';
+}
+
+function renderMatches() {
+  const search = (document.getElementById('filter-search')?.value||'').toLowerCase();
+  let data = allMatches;
+  if (search) data = data.filter(m=>(m.home||'').toLowerCase().includes(search)||(m.away||'').toLowerCase().includes(search));
+  document.getElementById('matches-body').innerHTML = data.length
+    ? data.map(m=>`<tr>
+        <td><span class="badge" style="${badgeStyle(m.status)}">${m.status==='live'?'<span class="live-dot"></span>':''}${statusLabel(m.status)}</span></td>
+        <td style="color:#aaa">Rd.${m.round||'?'}</td>
+        <td style="font-weight:500">${m.home||'?'}</td>
+        <td style="text-align:center;font-size:16px;font-weight:500">${m.status==='finished'||m.status==='live'?`${m.home_score??'–'} : ${m.away_score??'–'}`:'– : –'}</td>
+        <td style="font-weight:500">${m.away||'?'}</td>
+        <td style="color:#aaa;font-size:12px">${(m.match_date||'').split('T')[0]}</td>
+        <td style="font-size:12px">${m.flag||''} ${m.league_name||''}</td>
+        <td><button class="btn-out sm" onclick='openScoreModal(${JSON.stringify(m)})'>✏️</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" class="empty">Keine Spiele gefunden</td></tr>';
+}
+
+function renderTournaments() {
+  document.getElementById('tournaments-body').innerHTML = allTournaments.length
+    ? allTournaments.map(t=>`<tr>
+        <td style="font-size:13px">${t.start_date||''}</td>
+        <td style="font-weight:500">${t.country?.flag||''} ${t.name}</td>
+        <td style="color:#888">${t.city||''}</td>
+        <td><span class="badge" style="${catBadge(t.category)}">${t.category}</span></td>
+        <td style="color:#888;font-size:12px">${t.age_group||''}</td>
+        <td><span class="badge" style="background:#f0f0ec;color:#666">${t.active===false?'Inaktiv':'Aktiv'}</span></td>
+        <td style="display:flex;gap:5px">
+          <button class="btn-out sm" onclick="openTourModal(${t.id})">✏️</button>
+          <button class="btn-out sm btn-red" style="color:#c0392b" onclick="deleteTour(${t.id})">🗑</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" class="empty">Keine Turniere</td></tr>';
+}
+
+function renderLeagues() {
+  document.getElementById('leagues-body').innerHTML = allLeagues.length
+    ? allLeagues.map(l=>`<tr>
+        <td>${l.country?.flag||''}</td>
+        <td style="font-weight:500">${l.name}</td>
+        <td style="color:#888;font-size:12px">${l.short_name||''}</td>
+        <td style="color:#888">${l.level}</td>
+        <td style="color:#888;font-size:12px">${l.age_group||''}</td>
+        <td style="color:#888;font-size:12px">${l.season||''}</td>
+        <td><span class="badge" style="${l.active?'background:#edfae6;color:#2a7a1e':'background:#f0f0ec;color:#888'}">${l.active?'Aktiv':'Inaktiv'}</span></td>
+        <td><button class="btn-out sm" onclick="openLeagueModal(${l.id})">✏️</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" class="empty">Keine Ligen</td></tr>';
+}
+
+function renderClubs() {
+  const s = (document.getElementById('club-search')?.value||'').toLowerCase();
+  const data = s ? allClubs.filter(c=>c.name.toLowerCase().includes(s)) : allClubs;
+  document.getElementById('clubs-body').innerHTML = data.length
+    ? data.map(c=>`<tr>
+        <td style="font-weight:500">${c.name}</td>
+        <td>${c.country?.flag||''}</td>
+        <td style="color:#888;font-size:12px">${c.association?.code||'–'}</td>
+        <td style="color:#888">${c.city||''}</td>
+        <td><button class="btn-out sm" onclick="openClubModal(${c.id})">✏️</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Keine Vereine</td></tr>';
+}
+
+function renderWC() {
+  const sLabel = s => ({finished:'✓ Fertig',live:'🔴 Live',upcoming:'Ausstehend'}[s]||s);
+  document.getElementById('wc-body').innerHTML = allWC.length
+    ? allWC.map(r=>`<tr>
+        <td style="font-weight:500">${r.round_number===8?'Finale':`${r.round_number}. Runde`}</td>
+        <td>${r.city||''}</td>
+        <td>${r.country?.flag||''}</td>
+        <td style="color:#888;font-size:12px">${r.round_date||''}</td>
+        <td><span class="badge" style="${badgeStyle(r.status)}">${sLabel(r.status)}</span></td>
+        <td>${r.results_url?`<a href="${r.results_url}" target="_blank" style="color:#1a56a8;font-size:12px">Link →</a>`:'<span style="color:#ccc;font-size:12px">–</span>'}</td>
+        <td><button class="btn-out sm" onclick="openWCModal(${r.id})">✏️</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" class="empty">Keine Daten</td></tr>';
+}
+
+function renderUsers() {
+  const rColor = r => ({superadmin:'background:#ede9fe;color:#7c3aed',country_admin:'background:#e8f0fb;color:#1a56a8',league_admin:'background:#fdf3e6;color:#a05a10'}[r]||'background:#f0f0ec;color:#888');
+  const rLabel = r => ({superadmin:'Super-Admin',country_admin:'Länder-Admin',league_admin:'Liga-Admin'}[r]||r);
+  document.getElementById('users-body').innerHTML = allUsers.length
+    ? allUsers.map(u=>`<tr style="opacity:${u.active?1:.5}">
+        <td style="font-weight:500">${u.name||'–'}</td>
+        <td style="color:#888;font-size:12px">${u.email||''}</td>
+        <td><span class="badge" style="${rColor(u.role)}">${rLabel(u.role)}</span></td>
+        <td style="color:#888;font-size:12px">${u.country||'Alle'}</td>
+        <td><span class="badge" style="${u.active?'background:#edfae6;color:#2a7a1e':'background:#f0f0ec;color:#888'}">${u.active?'Aktiv':'Inaktiv'}</span></td>
+        <td style="display:flex;gap:5px">
+          <button class="btn-out sm" onclick="openUserModal(${u.id})">✏️</button>
+          <button class="btn-out sm" onclick="toggleUser(${u.id})">${u.active?'Sperren':'Aktivieren'}</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="empty">Keine Benutzer</td></tr>';
+}
+
+// ── Modals ───────────────────────────────────────────────────
+function openModal(title, bodyHTML, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-actions').innerHTML = actions;
+  document.getElementById('modal-bg').style.display = 'flex';
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').style.display = 'none';
+}
+function val(id) { return document.getElementById(id)?.value || ''; }
+
+// Score Modal
+function openScoreModal(m) {
+  openModal('Ergebnis eintragen', `
+    <div class="score-teams"><span>${m.home||'?'}</span><span>${m.away||'?'}</span></div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:10px">Runde ${m.round||'?'} · ${(m.match_date||'').split('T')[0]}</div>
+    <div class="score-box">
+      <input id="sc-h" class="score-input" type="number" min="0" value="${m.home_score??''}" placeholder="–" />
+      <span class="score-sep">:</span>
+      <input id="sc-a" class="score-input" type="number" min="0" value="${m.away_score??''}" placeholder="–" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select id="sc-status" class="form-input">
+        <option value="scheduled"${m.status==='scheduled'?' selected':''}>Geplant</option>
+        <option value="live"${m.status==='live'?' selected':''}>Live</option>
+        <option value="finished"${m.status==='finished'?' selected':''}>Beendet</option>
+        <option value="cancelled"${m.status==='cancelled'?' selected':''}>Abgesagt</option>
+      </select>
+    </div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveScore(${m.id})">Speichern ✓</button>`
+  );
+}
+
+async function saveScore(id) {
+  const data = { home_score: +val('sc-h'), away_score: +val('sc-a'), status: val('sc-status'), updated_at: new Date().toISOString() };
+  if (demoMode) {
+    allMatches = allMatches.map(m => m.id===id ? {...m,...data} : m);
+    renderMatches(); updateDash(); closeModal(); toast('✓ Ergebnis gespeichert');
+    return;
+  }
+  const {error} = await sb.from('matches').update(data).eq('id', id);
+  if (error) { toast('Fehler: ' + error.message); return; }
+  await loadMatches();
+  closeModal(); toast('✓ Ergebnis gespeichert');
+}
+
+// Turnier Modal
+function openTourModal(id) {
+  const t = id ? allTournaments.find(x=>x.id===id) : null;
+  openModal(t?'Turnier bearbeiten':'Neues Turnier', `
+    <div class="form-group"><label class="form-label">Name</label><input id="t-name" class="form-input" value="${t?.name||''}" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Stadt</label><input id="t-city" class="form-input" value="${t?.city||''}" /></div>
+      <div class="form-group"><label class="form-label">Datum</label><input id="t-date" type="date" class="form-input" value="${t?.start_date||''}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Kategorie</label>
+        <select id="t-cat" class="form-input">${['WM','EM','Weltcup','National','International','Regional'].map(c=>`<option${t?.category===c?' selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Altersklasse</label>
+        <select id="t-age" class="form-input">${['Elite','Frauen','U19','U17','U15','U13','U11'].map(a=>`<option${t?.age_group===a?' selected':''}>${a}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Veranstalter</label><input id="t-org" class="form-input" value="${t?.organizer||''}" /></div>
+    <div class="form-group"><label class="form-label">Quali-Hinweis</label><input id="t-quali" class="form-input" value="${t?.quali_note||''}" /></div>
+    <div class="form-group"><label class="form-label">Link (Originalseite)</label><input id="t-url" class="form-input" value="${t?.external_url||''}" /></div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveTour(${id||'null'})">Speichern ✓</button>`
+  );
+}
+
+async function saveTour(id) {
+  const data = { name:val('t-name'), city:val('t-city'), start_date:val('t-date'), category:val('t-cat'), age_group:val('t-age'), organizer:val('t-org'), quali_note:val('t-quali'), external_url:val('t-url') };
+  if (demoMode) {
+    if (id) allTournaments = allTournaments.map(t=>t.id===id?{...t,...data}:t);
+    else allTournaments.push({...data, id:Date.now(), country:{flag:''}});
+    renderTournaments(); closeModal(); toast('✓ Turnier gespeichert'); return;
+  }
+  if (id) await sb.from('tournaments').update(data).eq('id', id);
+  else await sb.from('tournaments').insert(data);
+  await loadTournaments();
+  closeModal(); toast('✓ Turnier gespeichert');
+}
+
+async function deleteTour(id) {
+  if (!confirm('Turnier wirklich löschen?')) return;
+  if (demoMode) { allTournaments = allTournaments.filter(t=>t.id!==id); renderTournaments(); return; }
+  await sb.from('tournaments').delete().eq('id', id);
+  await loadTournaments();
+}
+
+// Liga Modal
+function openLeagueModal(id) {
+  const l = id ? allLeagues.find(x=>x.id===id) : null;
+  openModal(l?'Liga bearbeiten':'Neue Liga', `
+    <div class="form-group"><label class="form-label">Name</label><input id="l-name" class="form-input" value="${l?.name||''}" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Kürzel</label><input id="l-short" class="form-input" value="${l?.short_name||''}" /></div>
+      <div class="form-group"><label class="form-label">Level</label><input id="l-level" type="number" class="form-input" value="${l?.level||1}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Land</label>
+        <select id="l-country" class="form-input">${allCountries.map(c=>`<option value="${c.id}"${l?.country_id===c.id?' selected':''}>${c.flag} ${c.name}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Saison</label><input id="l-season" class="form-input" value="${l?.season||'2025/26'}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Altersklasse</label>
+        <select id="l-age" class="form-input">${['Elite','Frauen','U19','U17','U15','U13','U11'].map(a=>`<option${l?.age_group===a?' selected':''}>${a}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Aktiv</label>
+        <select id="l-active" class="form-input"><option value="true"${l?.active!==false?' selected':''}>Ja</option><option value="false"${l?.active===false?' selected':''}>Nein</option></select>
+      </div>
+    </div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveLeague(${id||'null'})">Speichern ✓</button>`
+  );
+}
+
+async function saveLeague(id) {
+  const data = { name:val('l-name'), short_name:val('l-short'), level:+val('l-level'), country_id:+val('l-country'), season:val('l-season'), age_group:val('l-age'), active:val('l-active')==='true' };
+  if (demoMode) {
+    if (id) allLeagues = allLeagues.map(l=>l.id===id?{...l,...data}:l);
+    else allLeagues.push({...data, id:Date.now(), country:allCountries.find(c=>c.id===data.country_id)||{}});
+    renderLeagues(); fillLeagueFilter(); closeModal(); toast('✓ Liga gespeichert'); return;
+  }
+  if (id) await sb.from('leagues').update(data).eq('id', id);
+  else await sb.from('leagues').insert(data);
+  await loadLeagues(); closeModal(); toast('✓ Liga gespeichert');
+}
+
+// Verein Modal
+function openClubModal(id) {
+  const c = id ? allClubs.find(x=>x.id===id) : null;
+  openModal(c?'Verein bearbeiten':'Neuer Verein', `
+    <div class="form-group"><label class="form-label">Name</label><input id="c-name" class="form-input" value="${c?.name||''}" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Stadt</label><input id="c-city" class="form-input" value="${c?.city||''}" /></div>
+      <div class="form-group"><label class="form-label">Land</label>
+        <select id="c-country" class="form-input">${allCountries.map(x=>`<option value="${x.id}"${c?.country_id===x.id?' selected':''}>${x.flag} ${x.name}</option>`).join('')}</select>
+      </div>
+    </div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveClub(${id||'null'})">Speichern ✓</button>`
+  );
+}
+
+async function saveClub(id) {
+  const data = { name:val('c-name'), city:val('c-city'), country_id:+val('c-country') };
+  if (demoMode) {
+    if (id) allClubs = allClubs.map(c=>c.id===id?{...c,...data}:c);
+    else allClubs.push({...data, id:Date.now(), country:allCountries.find(x=>x.id===data.country_id)||{}, association:{code:''}});
+    renderClubs(); closeModal(); toast('✓ Verein gespeichert'); return;
+  }
+  if (id) await sb.from('clubs').update(data).eq('id', id);
+  else await sb.from('clubs').insert(data);
+  await loadClubs(); closeModal(); toast('✓ Verein gespeichert');
+}
+
+// Weltcup Modal
+function openWCModal(id) {
+  const r = allWC.find(x=>x.id===id);
+  if (!r) return;
+  openModal('Weltcup-Runde bearbeiten', `
+    <div class="form-group"><label class="form-label">Status</label>
+      <select id="wc-status" class="form-input">
+        <option value="upcoming"${r.status==='upcoming'?' selected':''}>Ausstehend</option>
+        <option value="live"${r.status==='live'?' selected':''}>Live</option>
+        <option value="finished"${r.status==='finished'?' selected':''}>Fertig</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Ergebnisse-Link (Men)</label><input id="wc-url" class="form-input" value="${r.results_url||''}" /></div>
+    <div class="form-group"><label class="form-label">Ergebnisse-Link (Women)</label><input id="wc-url-w" class="form-input" value="${r.results_women_url||''}" /></div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveWC(${id})">Speichern ✓</button>`
+  );
+}
+
+async function saveWC(id) {
+  const data = { status:val('wc-status'), results_url:val('wc-url')||null, results_women_url:val('wc-url-w')||null };
+  if (demoMode) {
+    allWC = allWC.map(r=>r.id===id?{...r,...data}:r);
+    renderWC(); closeModal(); toast('✓ Weltcup aktualisiert'); return;
+  }
+  await sb.from('worldcup_rounds').update(data).eq('id', id);
+  await loadWC(); closeModal(); toast('✓ Weltcup aktualisiert');
+}
+
+// User Modal
+function openUserModal(id) {
+  const u = id ? allUsers.find(x=>x.id===id) : null;
+  openModal(u?'Admin bearbeiten':'Admin einladen', `
+    <div class="form-group"><label class="form-label">Name</label><input id="u-name" class="form-input" value="${u?.name||''}" /></div>
+    <div class="form-group"><label class="form-label">E-Mail</label><input id="u-email" type="email" class="form-input" value="${u?.email||''}" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Rolle</label>
+        <select id="u-role" class="form-input">
+          <option value="superadmin"${u?.role==='superadmin'?' selected':''}>Super-Admin</option>
+          <option value="country_admin"${u?.role==='country_admin'?' selected':''}>Länder-Admin</option>
+          <option value="league_admin"${u?.role==='league_admin'?' selected':''}>Liga-Admin</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Land</label>
+        <select id="u-country" class="form-input">
+          <option value="">Alle Länder</option>
+          ${allCountries.map(c=>`<option value="${c.id}">${c.flag} ${c.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${!u?'<div style="font-size:12px;color:#888;background:#f5f5f0;padding:10px;border-radius:6px;margin-top:4px">Der neue Admin erhält eine Einladungs-E-Mail von Supabase.</div>':''}`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveUser(${id||'null'})">${u?'Speichern ✓':'Einladen ✓'}</button>`
+  );
+}
+
+async function saveUser(id) {
+  if (demoMode) {
+    const data = { name:val('u-name'), email:val('u-email'), role:val('u-role'), country:'–', active:true };
+    if (id) allUsers = allUsers.map(u=>u.id===id?{...u,...data}:u);
+    else allUsers.push({...data, id:Date.now()});
+    renderUsers(); closeModal(); toast('✓ Gespeichert'); return;
+  }
+  // Echter Supabase-Call: neuen User per Admin-API einladen
+  toast('ℹ️ User-Verwaltung erfolgt über Supabase Dashboard → Auth');
+  closeModal();
+}
+
+function toggleUser(id) {
+  allUsers = allUsers.map(u=>u.id===id?{...u,active:!u.active}:u);
+  renderUsers();
+  if (!demoMode && sb) sb.from('admin_profiles').update({active:allUsers.find(u=>u.id===id)?.active}).eq('id',id);
+}
+
+// Neues Spiel Modal
+function openMatchModal() {
+  openModal('Neues Spiel anlegen', `
+    <div class="form-group"><label class="form-label">Liga</label>
+      <select id="m-league" class="form-input">${allLeagues.map(l=>`<option value="${l.id}">${l.country?.flag||''} ${l.name}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Datum & Zeit</label><input id="m-date" type="datetime-local" class="form-input" /></div>
+      <div class="form-group"><label class="form-label">Runde</label><input id="m-round" type="number" class="form-input" placeholder="z.B. 14" /></div>
+    </div>
+    <div style="font-size:12px;color:#888;background:#f5f5f0;padding:10px;border-radius:6px">
+      Teams können nach dem Anlegen über die Ergebnisseite eingetragen werden.
+    </div>`,
+    `<button class="btn-out" onclick="closeModal()">Abbrechen</button>
+     <button class="btn btn-green" onclick="saveMatch()">Anlegen ✓</button>`
+  );
+}
+
+async function saveMatch() {
+  toast('ℹ️ Spiele-Anlegen erfordert eine Supabase-Verbindung mit Teams-Tabelle');
+  closeModal();
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function statusLabel(s) { return {scheduled:'Geplant',live:'Live',finished:'Beendet',cancelled:'Abgesagt',upcoming:'Ausstehend'}[s]||s; }
+function badgeStyle(s) { return {scheduled:'background:#f0f0ec;color:#666',live:'background:#fde8e8;color:#e03535',finished:'background:#edfae6;color:#2a7a1e',cancelled:'background:#f0f0ec;color:#aaa',upcoming:'background:#e8f0fb;color:#1a56a8',done:'background:#edfae6;color:#2a7a1e'}[s]||'background:#f0f0ec;color:#888'; }
+function catBadge(c) { return {WM:'background:#e8f0fb;color:#1a56a8',EM:'background:#edfae6;color:#2a7a1e',Weltcup:'background:#f0eafb;color:#6a30b8',National:'background:#fdf3e6;color:#a05a10',International:'background:#f3eefb;color:#6a30b8'}[c]||'background:#f0f0ec;color:#666'; }
+
+function nav(page, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+}
+
+function logout() {
+  document.getElementById('setup-banner').classList.remove('hidden');
+  document.getElementById('sb-status').textContent = 'Nicht verbunden';
+  document.getElementById('user-name').textContent = '–';
+  document.getElementById('user-role').textContent = '–';
+  sb = null; demoMode = false;
+  if (sb) sb.auth.signOut();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.style.display='none', 2800);
+}
+</script>
+</body>
+</html>
