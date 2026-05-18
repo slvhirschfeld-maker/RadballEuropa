@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v8</title>
+<title>Radball Europa v12</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -220,21 +220,6 @@ nav button.active { background: #1a1a1a; color: #fff; }
   <button onclick="useDemoData()" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4)">Demo-Daten</button>
 </div>
 
-<script>
-  // Supabase automatisch verbinden beim Start
-  window.addEventListener('DOMContentLoaded', () => {
-    const SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
-    if (SB_URL && SB_KEY) {
-      sb = supabase.createClient(SB_URL, SB_KEY);
-	   console.log('sb (connectSB) erstellt:', !!sb)
-      loadAll();
-      setupRealtime();
-    }
-  });
-</script>
-
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
@@ -363,12 +348,12 @@ let allMatches = [];
 let allTournaments = [];
 let realtimeChannel = null;
 
-// ── Supabase verbinden ───────────────────────────────────────
+// ── Supabase verbinden (manuell) ─────────────────────────────
 function connectSupabase() {
   const url = document.getElementById('sb-url').value.trim();
   const key = document.getElementById('sb-key').value.trim();
   if (!url || !key) { showToast('Bitte URL und Key eingeben'); return; }
-  sb = supabase.createClient(url, key);
+  sb = createSBClient(url, key);
   document.getElementById('config-banner').classList.add('hidden');
   loadAll();
   setupRealtime();
@@ -462,15 +447,23 @@ async function loadStandings(leagueId) {
 // ── Realtime ─────────────────────────────────────────────────
 function setupRealtime() {
   if (!sb) return;
-  realtimeChannel = sb.channel('public:matches')
+  sb.channel('pwa-live')
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, payload => {
-      const updated = payload.new;
-      allMatches = allMatches.map(m => m.id === updated.id
-        ? { ...m, home_score: updated.home_score, away_score: updated.away_score, status: updated.status }
+      const u = payload.new || payload;
+      allMatches = allMatches.map(m => m.id === u.id
+        ? { ...m, home_score: u.home_score, away_score: u.away_score, status: u.status }
         : m);
       renderMatches();
-      showToast('🔴 Live-Update: Ergebnis aktualisiert');
+      showToast('🔴 Ergebnis aktualisiert');
       document.getElementById('realtime-dot').classList.add('connected');
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
+      // Turnier-Detail neu laden falls offen
+      const dv = document.getElementById('tour-detail-view');
+      if (dv.style.display !== 'none' && currentTourId) showTourDetail(currentTourId);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'worldcup_rounds' }, () => {
+      loadWorldcup();
     })
     .subscribe(status => {
       if (status === 'SUBSCRIBED')
