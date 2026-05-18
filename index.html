@@ -820,6 +820,22 @@ function showToast(msg) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+
+
+
+window.addEventListener('DOMContentLoaded', async () => {
+  console.log('SB_URL:', SB_URL);
+  console.log('SB_KEY:', SB_KEY?.slice(0,20));
+  if (!SB_URL || SB_URL.includes('DEIN')) {
+    console.error('SB_URL nicht gesetzt!');
+    return;
+  }
+  const r = await fetch(`${SB_URL}/rest/v1/tournaments?select=id,name`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+  });
+  const d = await r.json();
+  console.log('Turniere direkt:', d);
+});
 </script>
 </body>
 </html>
