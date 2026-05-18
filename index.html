@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v33</title>
+<title>Radball Europa v34</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -205,12 +205,12 @@ nav button.active { background: #1a1a1a; color: #fff; }
 </head>
 <body>
 
-
 <script>
   var SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';  <!-- wird sofort überschrieben -->
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
 </script>
 <script src="config.js">  </script>
+
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
@@ -343,8 +343,8 @@ let allTournaments = [];
 
 // ── Supabase verbinden (manuell) ─────────────────────────────
 function connectSupabase() {
-  const url = document.getElementById('sb-url').value.trim();
-  const key = document.getElementById('sb-key').value.trim();
+  const url = SB_URL;//document.getElementById('sb-url').value.trim();
+  const key = SB_KEY;//document.getElementById('sb-key').value.trim();
   if (!url || !key) { showToast('Bitte URL und Key eingeben'); return; }
   sb = createSBClient(url, key);
   document.getElementById('config-banner').classList.add('hidden');
