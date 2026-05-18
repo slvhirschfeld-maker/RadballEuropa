@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v22</title>
+<title>Radball Europa v22a</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -205,7 +205,11 @@ nav button.active { background: #1a1a1a; color: #fff; }
 </head>
 <body>
 
-<!-- Kein Config-Banner mehr – Verbindung läuft über config.js -->
+<script>
+  var SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';  <!-- wird sofort überschrieben -->
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
+</script>
+<script src="config.js">  </script>
 
 <div class="header">
   <div class="logo">
@@ -325,11 +329,7 @@ nav button.active { background: #1a1a1a; color: #fff; }
 
 </div><!-- /container -->
 <div id="toast"></div>
-<script>
-  var SB_URL = 'Platzhalter';  <!-- wird sofort überschrieben -->
-  var SB_KEY = 'Platzhalter';
-</script>
-<script src="config.js">  </script>
+
 <script>
 // ── State ────────────────────────────────────────────────────
 let sb = null;
