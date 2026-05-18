@@ -220,6 +220,21 @@ nav button.active { background: #1a1a1a; color: #fff; }
   <button onclick="useDemoData()" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4)">Demo-Daten</button>
 </div>
 
+<script>
+  // Supabase automatisch verbinden beim Start
+  window.addEventListener('DOMContentLoaded', () => {
+    const SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
+    if (SB_URL && SB_KEY) {
+      sb = supabase.createClient(SB_URL, SB_KEY);
+	   console.log('sb (connectSB) erstellt:', !!sb)
+      loadAll();
+      setupRealtime();
+    }
+  });
+</script>
+
+
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
