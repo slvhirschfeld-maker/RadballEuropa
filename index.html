@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v12</title>
+<title>Radball Europa v15</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -344,9 +344,11 @@ nav button.active { background: #1a1a1a; color: #fff; }
 let sb = null;
 let currentCountry = 'all';
 let currentTourFilter = 'all';
+let currentTourId = null;
 let allMatches = [];
 let allTournaments = [];
-let realtimeChannel = null;
+
+// ── Supabase-Client (nutzt config.js) ───────────────────────
 
 // ── Supabase verbinden (manuell) ─────────────────────────────
 function connectSupabase() {
