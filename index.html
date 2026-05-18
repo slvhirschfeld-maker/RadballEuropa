@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v22a</title>
+<title>Radball Europa</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -210,7 +210,6 @@ nav button.active { background: #1a1a1a; color: #fff; }
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
 </script>
 <script src="config.js">  </script>
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
@@ -416,7 +415,8 @@ async function loadTournaments() {
   const { data, error } = await sb.from('tournaments')
     .select('*, country:countries(flag)')
     .order('start_date');
-  if (error) return;
+  if (error) { showToast('Fehler Turniere: ' + error.message); return; }
+  console.log('Turniere geladen:', data?.length, data);
   allTournaments = (data || []).map(t => ({ ...t, country_flag: t.country?.flag }));
   renderTournaments();
 }
@@ -527,15 +527,23 @@ function renderTournaments() {
     ? allTournaments
     : allTournaments.filter(t => t.category === currentTourFilter);
 
+  console.log('renderTournaments:', allTournaments.length, 'total,', filtered.length, 'gefiltert, Filter:', currentTourFilter);
+
   if (!filtered.length) {
-    document.getElementById('tournaments-container').innerHTML = '<div class="loading">Keine Turniere gefunden</div>';
+    document.getElementById('tournaments-container').innerHTML =
+      `<div class="loading">Keine Turniere gefunden (${allTournaments.length} gesamt geladen)</div>`;
     return;
   }
+
   const MONTHS = ['','JAN','FEB','MÄR','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
-  const catBadge = c => ({ WM:'badge-wm', EM:'badge-em', Weltcup:'badge-wc', National:'badge-nat', International:'badge-int' }[c] || 'badge-int');
+  const catBadge = c => ({
+    WM:'badge-wm', EM:'badge-em', Weltcup:'badge-wc',
+    National:'badge-nat', International:'badge-int'
+  }[c] || 'badge-int');
 
   document.getElementById('tournaments-container').innerHTML = filtered.map(t => {
     const d = t.start_date ? t.start_date.split('-') : ['','01','01'];
+    const flag = t.country_flag || t.country?.flag || '';
     return `<div class="tournament-card" onclick="showTourDetail(${t.id})">
       <div class="date-box">
         <div class="date-day">${d[2]}</div>
@@ -544,9 +552,9 @@ function renderTournaments() {
       <div style="flex:1">
         <div class="tour-name">${t.name}</div>
         <div class="tour-meta">
-          ${t.country_flag || ''} ${t.city || ''}
+          ${flag} ${t.city || ''}
           <span class="badge ${catBadge(t.category)}">${t.category}</span>
-          <span class="badge" style="background:#f0f0ec;color:#666">${t.age_group}</span>
+          <span class="badge" style="background:#f0f0ec;color:#666">${t.age_group || ''}</span>
         </div>
       </div>
       <span style="color:#bbb;font-size:12px">→</span>
