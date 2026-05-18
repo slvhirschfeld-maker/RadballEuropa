@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v29</title>
+<title>Radball Europa v32</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -210,7 +210,6 @@ nav button.active { background: #1a1a1a; color: #fff; }
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
 </script>
 <script src="config.js">  </script>
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
@@ -789,6 +788,11 @@ function filterTour(cat, btn) {
   currentTourFilter = cat;
   document.querySelectorAll('#tour-list-view .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  if (allTournaments.length === 0) {
+    // Noch nicht geladen – neu laden
+    if (sb) loadTournaments();
+    return;
+  }
   renderTournaments();
 }
 
