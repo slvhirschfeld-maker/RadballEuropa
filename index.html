@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v36</title>
+<title>Radball Europa v39</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -210,6 +210,7 @@ nav button.active { background: #1a1a1a; color: #fff; }
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
 </script>
 <script src="config.js">  </script>
+
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
@@ -354,6 +355,7 @@ function connectSupabase() {
 
 // ── Demo-Daten ───────────────────────────────────────────────
 function useDemoData() {
+  console.log('useDemoData aufgerufen – SB_URL:', SB_URL?.slice(0,30));
   document.getElementById('config-banner').classList.add('hidden');
   allMatches = [
     { id:1, league_id:1, league_name:'1. Bundesliga', country_code:'de', country_flag:'🇩🇪', home:'RSV Muggensturm', away:'RSV Denkingen',  home_score:5, away_score:3, match_date:'2026-05-03T18:00', status:'finished', round:13 },
