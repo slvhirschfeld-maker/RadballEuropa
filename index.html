@@ -3,89 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radball Europa v39</title>
+<title>Radball Europa v28</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Radball">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<script>
-// Minimaler Supabase-Client (funktioniert ohne CDN)
-const supabase = {
-  createClient(url, key) {
-    const headers = { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
-    const base = url.replace(/\/$/, '') + '/rest/v1';
-    const rtBase = url.replace(/\/$/, '').replace('https://', 'wss://') + '/realtime/v1';
-    let ws = null, channels = {};
-
-    const client = {
-      from(table) {
-        let _select = '*', _filters = [], _order = null, _limit = null;
-        const q = {
-          select(cols) { _select = cols; return q; },
-          eq(col, val) { _filters.push(`${col}=eq.${val}`); return q; },
-          order(col, opts = {}) { _order = `${col}.${opts.ascending === false ? 'desc' : 'asc'}`; return q; },
-          limit(n) { _limit = n; return q; },
-          update(data) {
-            return {
-              eq(col, val) {
-                return fetch(`${base}/${table}?${col}=eq.${val}`, {
-                  method: 'PATCH', headers: { ...headers, 'Prefer': 'return=representation' },
-                  body: JSON.stringify(data)
-                }).then(r => r.json()).then(d => ({ data: d, error: null }))
-                  .catch(e => ({ data: null, error: e }));
-              }
-            };
-          },
-          async then(resolve) {
-            let url = `${base}/${table}?select=${encodeURIComponent(_select)}`;
-            _filters.forEach(f => url += `&${f}`);
-            if (_order) url += `&order=${_order}`;
-            if (_limit) url += `&limit=${_limit}`;
-            try {
-              const r = await fetch(url, { headers });
-              const data = await r.json();
-              resolve({ data: Array.isArray(data) ? data : [], error: null });
-            } catch(e) { resolve({ data: [], error: e }); }
-          }
-        };
-        return q;
-      },
-      channel(name) {
-        const subs = [];
-        const ch = {
-          on(event, filter, cb) { subs.push({ filter, cb }); return ch; },
-          subscribe(statusCb) {
-            try {
-              ws = new WebSocket(`${rtBase}/websocket?apikey=${key}&vsn=1.0.0`);
-              ws.onopen = () => {
-                ws.send(JSON.stringify({ topic: `realtime:${filter?.table||'*'}`, event: 'phx_join', payload: {}, ref: '1' }));
-                statusCb && statusCb('SUBSCRIBED');
-              };
-              ws.onmessage = e => {
-                try {
-                  const msg = JSON.parse(e.data);
-                  if (msg.event === 'postgres_changes') subs.forEach(s => s.cb(msg.payload));
-                } catch(_) {}
-              };
-              ws.onerror = () => statusCb && statusCb('ERROR');
-            } catch(_) { statusCb && statusCb('ERROR'); }
-            return ch;
-          }
-        };
-        return ch;
-      }
-    };
-    return client;
-  }
-};
-</script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 15px; }
-
-/* ── Header ── */
 .header { background: #fff; border-bottom: 0.5px solid #ddd; padding: 0 16px; display: flex; align-items: center; gap: 12px; height: 52px; position: sticky; top: 0; z-index: 100; }
 .logo { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .logo-icon { width: 28px; height: 28px; background: #1a1a1a; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -96,13 +23,9 @@ nav { display: flex; gap: 2px; margin-left: auto; }
 nav button { background: none; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #555; transition: all 0.15s; white-space: nowrap; }
 nav button:hover { background: #f0f0ec; }
 nav button.active { background: #1a1a1a; color: #fff; }
-
-/* ── Layout ── */
 .container { max-width: 900px; margin: 0 auto; padding: 18px 14px; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
-
-/* ── Cards & Rows ── */
 .card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 13px 16px; margin-bottom: 10px; }
 .section-title { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
 .match-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid #f0f0e8; }
@@ -112,14 +35,10 @@ nav button.active { background: #1a1a1a; color: #fff; }
 .score { font-size: 16px; font-weight: 500; min-width: 50px; text-align: center; }
 .match-meta { font-size: 11px; color: #aaa; text-align: right; min-width: 80px; }
 .country-label { font-size: 13px; font-weight: 500; margin-bottom: 9px; display: flex; align-items: center; gap: 7px; }
-
-/* ── Filter ── */
 .filter-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .filter-btn { background: #fff; border: 0.5px solid #ddd; padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; color: #555; transition: all 0.15s; }
 .filter-btn:hover { border-color: #aaa; }
 .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-
-/* ── Turniere ── */
 .tournament-card { background: #fff; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 13px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: border-color 0.15s; }
 .tournament-card:hover { border-color: #aaa; }
 .date-box { background: #f5f5f0; border-radius: 7px; padding: 6px 9px; text-align: center; min-width: 46px; flex-shrink: 0; }
@@ -133,8 +52,6 @@ nav button.active { background: #1a1a1a; color: #fff; }
 .badge-nat { background: #fdf3e6; color: #a05a10; }
 .badge-int { background: #f3eefb; color: #6a30b8; }
 .badge-wc  { background: #f0eafb; color: #6a30b8; }
-
-/* ── Tabellen ── */
 .standings-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .standings-table th { text-align: left; padding: 7px 7px; font-size: 11px; color: #888; font-weight: 500; border-bottom: 0.5px solid #e8e8e0; background: #fafaf7; }
 .standings-table td { padding: 8px 7px; border-bottom: 0.5px solid #f0f0e8; }
@@ -142,8 +59,6 @@ nav button.active { background: #1a1a1a; color: #fff; }
 .rank { color: #bbb; width: 22px; font-weight: 500; }
 .rank.top { color: #c8900a; }
 .pts { font-weight: 500; }
-
-/* ── Detail ── */
 .back-btn { background: none; border: 0.5px solid #ddd; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; color: #555; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 5px; }
 .tour-detail-header { background: #1a1a1a; color: #fff; padding: 14px 18px; border-radius: 10px 10px 0 0; }
 .tour-detail-header .org { font-size: 11px; color: #888; margin-bottom: 3px; }
@@ -162,19 +77,17 @@ nav button.active { background: #1a1a1a; color: #fff; }
 .game-num { font-size: 11px; color: #bbb; min-width: 22px; }
 .game-score { font-size: 14px; font-weight: 500; min-width: 46px; text-align: center; }
 .game-score.pending { color: #bbb; font-size: 12px; }
-
-/* ── International ── */
 .wc-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(110px,1fr)); gap: 7px; margin: 10px 0 18px; }
 .wc-round { border: 0.5px solid #e0e0d8; border-radius: 8px; padding: 9px 11px; font-size: 12px; }
-.wc-round.done     { background: #f5f5f0; }
-.wc-round.live     { background: #e8f0fb; border-color: #b5d4f4; }
+.wc-round.finished { background: #f5f5f0; }
+.wc-round.live { background: #e8f0fb; border-color: #b5d4f4; }
 .wc-round.upcoming { background: #fff; }
-.wc-round.finale   { background: #1a1a1a; color: #fff; }
-.wc-round .rnd  { font-size: 10px; color: #aaa; margin-bottom: 3px; }
+.wc-round.finale { background: #1a1a1a; color: #fff; }
+.wc-round .rnd { font-size: 10px; color: #aaa; margin-bottom: 3px; }
 .wc-round.finale .rnd { color: #888; }
 .wc-round .city { font-weight: 500; font-size: 12px; margin-bottom: 2px; }
-.wc-round .date { font-size: 11px; color: #888; }
-.wc-round.finale .date { color: #aaa; }
+.wc-round .wdate { font-size: 11px; color: #888; }
+.wc-round.finale .wdate { color: #aaa; }
 .wc-round a { color: #1a56a8; text-decoration: none; font-size: 11px; display: inline-block; margin-top: 4px; }
 .wc-round.finale a { color: #7ab3f0; }
 .int-country-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin-bottom: 8px; cursor: pointer; user-select: none; padding: 10px 14px; background: #fff; border: 0.5px solid #e0e0d8; border-radius: 8px; }
@@ -189,33 +102,21 @@ nav button.active { background: #1a1a1a; color: #fff; }
 .result-link { display: inline-flex; align-items: center; font-size: 12px; color: #1a56a8; background: #f0f4fb; border: 0.5px solid #c8d8f0; border-radius: 5px; padding: 3px 8px; text-decoration: none; white-space: nowrap; }
 .result-link:hover { background: #dce8f8; }
 .result-link.done { color: #2a7a1e; background: #f0faf0; border-color: #b8ddb8; }
-
-/* ── Loading / Empty ── */
 .loading { text-align: center; padding: 30px; color: #aaa; font-size: 13px; }
 .skeleton { background: linear-gradient(90deg,#f0f0ec 25%,#e8e8e4 50%,#f0f0ec 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; height: 14px; margin-bottom: 8px; }
 @keyframes shimmer { 0%{background-position:200%}100%{background-position:-200%} }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 .live-dot { display: inline-block; width: 6px; height: 6px; background: #e03535; border-radius: 50%; margin-right: 4px; animation: pulse 1.2s infinite; }
-.updated-flash { animation: flash 0.8s ease; }
-@keyframes flash { 0%{background:#fffbe0}100%{background:#fff} }
-
-/* ── Toast ── */
 #toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 500; display: none; }
 </style>
 </head>
 <body>
 
-<script>
-  var SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';  <!-- wird sofort überschrieben -->
-  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';
-</script>
-<script src="config.js">  </script>
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="5" x2="12" y2="2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></div>
     Radball Europa
-    <div class="realtime-dot" id="realtime-dot" title="Realtime-Verbindung"></div>
+    <div class="realtime-dot" id="realtime-dot"></div>
   </div>
   <nav>
     <button class="active" onclick="showTab('ergebnisse',this)">Ergebnisse</button>
@@ -230,7 +131,7 @@ nav button.active { background: #1a1a1a; color: #fff; }
 <!-- ERGEBNISSE -->
 <div id="ergebnisse" class="tab-content active">
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="filterCountry('all',this)">Alle Länder</button>
+    <button class="filter-btn active" onclick="filterCountry('all',this)">Alle</button>
     <button class="filter-btn" onclick="filterCountry('de',this)">🇩🇪 DE</button>
     <button class="filter-btn" onclick="filterCountry('ch',this)">🇨🇭 CH</button>
     <button class="filter-btn" onclick="filterCountry('at',this)">🇦🇹 AT</button>
@@ -238,12 +139,7 @@ nav button.active { background: #1a1a1a; color: #fff; }
     <button class="filter-btn" onclick="filterCountry('cz',this)">🇨🇿 CZ</button>
     <button class="filter-btn" onclick="filterCountry('be',this)">🇧🇪 BE</button>
   </div>
-  <div id="results-container">
-    <div class="loading">Daten werden geladen…<br><br>
-      <div class="skeleton" style="width:80%;margin:0 auto"></div>
-      <div class="skeleton" style="width:65%;margin:6px auto 0"></div>
-    </div>
-  </div>
+  <div id="results-container"><div class="loading">Lade…<br><br><div class="skeleton" style="width:80%;margin:0 auto"></div><div class="skeleton" style="width:65%;margin:6px auto 0"></div></div></div>
 </div>
 
 <!-- TURNIERE -->
@@ -257,7 +153,7 @@ nav button.active { background: #1a1a1a; color: #fff; }
       <button class="filter-btn" onclick="filterTour('National',this)">🏆 National</button>
       <button class="filter-btn" onclick="filterTour('International',this)">🌐 International</button>
     </div>
-    <div id="tournaments-container" class="loading">Lade Turniere…</div>
+    <div id="tournaments-container"><div class="loading">Lade Turniere…</div></div>
   </div>
 </div>
 
@@ -269,295 +165,213 @@ nav button.active { background: #1a1a1a; color: #fff; }
     <button class="filter-btn" onclick="switchLeague(11,this)">🇦🇹 Liga AT</button>
     <button class="filter-btn" onclick="switchLeague(12,this)">🇫🇷 CFE</button>
   </div>
-  <div id="standings-container" class="loading">Lade Tabelle…</div>
+  <div id="standings-container"><div class="loading">Lade Tabelle…</div></div>
 </div>
 
 <!-- INTERNATIONAL -->
 <div id="international" class="tab-content">
   <div class="section-title">UCI Cycle-Ball World Cup 2026</div>
-  <div class="wc-grid" id="wc-rounds-container">
-    <div class="loading">Lade Weltcup…</div>
-  </div>
-
+  <div class="wc-grid" id="wc-rounds-container"><div class="loading">Lade…</div></div>
   <div class="section-title" style="margin-top:16px">Ergebnisse & Links nach Land</div>
-
-  <!-- Belgien -->
   <div class="int-country-header" onclick="toggleInt(this)">🇧🇪 Belgien <span class="chev">▾</span></div>
   <div class="int-links">
     <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/Liga1_2026.html" class="result-link done" target="_blank">1. Liga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/KampioenschapvanVlaanderen_Elite_2026.htm" class="result-link done" target="_blank">Kampioenschap v. Vlaanderen</a></div></div>
     <div class="int-link-group"><div class="int-group-title">U19 / U16 / U13</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U19_2026.html" class="result-link done" target="_blank">U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U19_Finale_2026.htm" class="result-link done" target="_blank">Finale U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U16_2026.htm" class="result-link done" target="_blank">U16</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Belgien/Meisterschaft/U13_2026.html" class="result-link done" target="_blank">U13</a></div></div>
   </div>
-
-  <!-- Deutschland -->
   <div class="int-country-header" onclick="toggleInt(this)">🇩🇪 Deutschland <span class="chev">▾</span></div>
   <div class="int-links">
     <div class="int-link-group"><div class="int-group-title">Bundesliga</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga1_Radball_2026.html" class="result-link done" target="_blank">1. BL</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Mitte_2026.html" class="result-link" target="_blank">2. BL Mitte</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Nord_2026.html" class="result-link" target="_blank">2. BL Nord</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundesliga2_Radball_Sued_2026.html" class="result-link" target="_blank">2. BL Süd</a></div></div>
     <div class="int-link-group"><div class="int-group-title">Frauen</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/Bundespokal_Radball_Frauen_2026.html" class="result-link done" target="_blank">Bundespokal Frauen</a></div></div>
     <div class="int-link-group"><div class="int-group-title">DM Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe1_2026.html" class="result-link done" target="_blank">U13 HF Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">Gr.2</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe1_2026.html" class="result-link" target="_blank">U19 HF Gr.1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U19_Halbfinale_Gruppe2_2026.html" class="result-link" target="_blank">Gr.2</a></div></div>
   </div>
-
-  <!-- Frankreich -->
   <div class="int-country-header" onclick="toggleInt(this)">🇫🇷 Frankreich <span class="chev">▾</span></div>
   <div class="int-links">
-    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_Elite_2026.html" class="result-link done" target="_blank">Championnat de France Elite</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_Grand_Est_Liga1_2026.html" class="result-link" target="_blank">Grand Est Liga 1</a></div></div>
-    <div class="int-link-group"><div class="int-group-title">Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_U19_2026.html" class="result-link" target="_blank">U19</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_U15_2026.html" class="result-link" target="_blank">U15</a></div></div>
+    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Frankreich/Meisterschaft/Championnat_de_France_Elite_2026.html" class="result-link done" target="_blank">Championnat de France Elite</a></div></div>
   </div>
-
-  <!-- Österreich -->
   <div class="int-country-header" onclick="toggleInt(this)">🇦🇹 Österreich <span class="chev">▾</span></div>
   <div class="int-links">
-    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Meisterschaft/Liga1_2026.html" class="result-link" target="_blank">1. Liga</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Cup/OE_Cup_Finale_2026.html" class="result-link" target="_blank">Österreich Cup</a></div></div>
-    <div class="int-link-group"><div class="int-group-title">Vorarlberg LM</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Liga1_2026.html" class="result-link done" target="_blank">Liga 1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Junioren_2026.html" class="result-link done" target="_blank">Junioren</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Landesmeisterschaft/LM_Vorarlberg_Jugend_2026.html" class="result-link done" target="_blank">Jugend</a></div></div>
+    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Oesterreich/Meisterschaft/Liga1_2026.html" class="result-link" target="_blank">1. Liga</a></div></div>
   </div>
-
-  <!-- Schweiz -->
   <div class="int-country-header" onclick="toggleInt(this)">🇨🇭 Schweiz <span class="chev">▾</span></div>
   <div class="int-links">
-    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLA_Qualifikation_2026.html" class="result-link done" target="_blank">NLA Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLB_Qualifikation_2026.html" class="result-link" target="_blank">NLB Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/Liga3_Qualifikation_2026.htm" class="result-link done" target="_blank">3. Liga Quali</a></div></div>
-    <div class="int-link-group"><div class="int-group-title">Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U17_U19_Qualifikation_2026.html" class="result-link" target="_blank">U17/U19 Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U15_Qualifikation_2026.html" class="result-link" target="_blank">U15 Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/U11_Qualifikation_2026.html" class="result-link done" target="_blank">U11 Quali</a></div></div>
+    <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLA_Qualifikation_2026.html" class="result-link done" target="_blank">NLA Quali</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Schweiz/Meisterschaft/NLB_Qualifikation_2026.html" class="result-link" target="_blank">NLB Quali</a></div></div>
   </div>
-
-  <!-- Tschechien -->
   <div class="int-country-header" onclick="toggleInt(this)">🇨🇿 Tschechien <span class="chev">▾</span></div>
   <div class="int-links">
     <div class="int-link-group"><div class="int-group-title">Elite</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/Extraliga_Elite_2026.html" class="result-link" target="_blank">Extraliga</a></div></div>
-    <div class="int-link-group"><div class="int-group-title">Nachwuchs</div><div class="link-row"><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/U23_MCR_Runde1_2026.html" class="result-link done" target="_blank">U23 Runde 1</a><a href="https://www.vfh-muecheln.de/2026/Ergebnisse/Tschechien/Meisterschaft/MCR_Finale_Junioren_2026.htm" class="result-link done" target="_blank">Junioren Finale</a></div></div>
   </div>
-
-  <div style="margin-top:12px;font-size:11px;color:#aaa">Quelle: vfh-muecheln.de/Radball.at · Stand: Mai 2026</div>
+  <div style="margin-top:12px;font-size:11px;color:#aaa">Quelle: vfh-muecheln.de · Stand: Mai 2026</div>
 </div>
 
-</div><!-- /container -->
+</div>
 <div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     KONFIGURATION – Supabase-Daten hier eintragen
+     ═══════════════════════════════════════════════ -->
+<script>
+const SB_URL = 'https://btpohaqsqajmwztmrrcp.supabase.co';  // ← anpassen
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0cG9oYXFzcWFqbXd6dG1ycmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDY1NzEsImV4cCI6MjA5MzcyMjU3MX0.wQzp50utSWzOWZrOL4BM1s9dbiPk8duLajh9B7bBSOM';            // ← anpassen
+
+</script>
 
 <script>
 // ── State ────────────────────────────────────────────────────
-let sb = null;
-let currentCountry = 'all';
-let currentTourFilter = 'all';
-let currentTourId = null;
-let allMatches = [];
-let allTournaments = [];
+var allMatches = [], allTournaments = [], allCountries = [];
+var currentCountry = 'all', currentTourFilter = 'all', currentTourId = null;
 
-// ── Supabase-Client (nutzt config.js) ───────────────────────
-
-// ── Supabase verbinden (manuell) ─────────────────────────────
-function connectSupabase() {
-  const url = document.getElementById('sb-url').value.trim();
-  const key = document.getElementById('sb-key').value.trim();
-  if (!url || !key) { showToast('Bitte URL und Key eingeben'); return; }
-  sb = createSBClient(url, key);
-  document.getElementById('config-banner').classList.add('hidden');
-  loadAll();
-  setupRealtime();
-  showToast('✓ Supabase verbunden');
-}
-
-// ── Demo-Daten ───────────────────────────────────────────────
-function useDemoData() {
-  console.log('useDemoData aufgerufen – SB_URL:', SB_URL?.slice(0,30));
-  document.getElementById('config-banner').classList.add('hidden');
-  allMatches = [
-    { id:1, league_id:1, league_name:'1. Bundesliga', country_code:'de', country_flag:'🇩🇪', home:'RSV Muggensturm', away:'RSV Denkingen',  home_score:5, away_score:3, match_date:'2026-05-03T18:00', status:'finished', round:13 },
-    { id:2, league_id:1, league_name:'1. Bundesliga', country_code:'de', country_flag:'🇩🇪', home:'RSC Dittigheim',  away:'RC Steißlingen', home_score:4, away_score:4, match_date:'2026-05-03T16:00', status:'finished', round:13 },
-    { id:3, league_id:1, league_name:'1. Bundesliga', country_code:'de', country_flag:'🇩🇪', home:'RC Waldshut',     away:'RSV Denkingen',  home_score:null, away_score:null, match_date:'2026-05-08T18:00', status:'live',   round:14 },
-    { id:4, league_id:6, league_name:'Nationalliga A', country_code:'ch', country_flag:'🇨🇭', home:'RV Sursee',      away:'RV Rickenbach',  home_score:7, away_score:2, match_date:'2026-05-04T13:30', status:'finished', round:10 },
-    { id:5, league_id:6, league_name:'Nationalliga A', country_code:'ch', country_flag:'🇨🇭', home:'RV Frenkendorf', away:'RV Wittnau',     home_score:null, away_score:null, match_date:'2026-05-08T00:00', status:'live',   round:11 },
-    { id:6, league_id:11, league_name:'1. Liga Österreich', country_code:'at', country_flag:'🇦🇹', home:'RSV Korneuburg', away:'RV Wieselburg', home_score:6, away_score:1, match_date:'2026-04-30T18:00', status:'finished', round:12 },
-    { id:7, league_id:12, league_name:'Championnat Elite', country_code:'fr', country_flag:'🇫🇷', home:'VC Wittenheim', away:'VC Mulhouse',    home_score:5, away_score:5, match_date:'2026-05-04T17:00', status:'finished', round:11 },
-    { id:8, league_id:14, league_name:'Extraliga', country_code:'cz', country_flag:'🇨🇿', home:'KK Liberec', away:'KK Přerov', home_score:2, away_score:3, match_date:'2026-05-02T15:00', status:'finished', round:9 },
-  ];
-  allTournaments = [
-    { id:1, name:'U13 DM Halbfinale – Gruppe 1', country_flag:'🇩🇪', city:'Demmin', start_date:'2026-05-09', category:'National', age_group:'U13', organizer:'BDR e.V.', quali_spots:2, quali_note:'Die ersten 2 qualifizieren sich für das Finale am 30./31. Mai 2026', external_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/Deutschland/Meisterschaft/DM_Quali_U13_Halbfinale_Gruppe1_2026.html' },
-    { id:2, name:'UCI Weltcup 2026 – 3. Runde', country_flag:'🇭🇺', city:'Baj', start_date:'2026-05-09', category:'Weltcup', age_group:'Elite', organizer:'UCI', quali_spots:null, quali_note:null, external_url:null },
-    { id:3, name:'UCI Weltcup 2026 – 4. Runde', country_flag:'🇩🇪', city:'Hähnlein', start_date:'2026-08-29', category:'Weltcup', age_group:'Elite', organizer:'UCI', quali_spots:null, quali_note:null, external_url:null },
-    { id:4, name:'UCI Indoor Cycling WM 2026', country_flag:'🇬🇧', city:'Derby', start_date:'2026-10-16', category:'WM', age_group:'Elite', organizer:'UCI', quali_spots:null, quali_note:null, external_url:null },
-    { id:5, name:'UCI Weltcup – Finale', country_flag:'🇨🇭', city:'Sulgen', start_date:'2026-12-12', category:'Weltcup', age_group:'Elite', organizer:'UCI', quali_spots:null, quali_note:null, external_url:null },
-  ];
-  renderMatches();
-  renderTournaments();
-  renderStandings(1);
-  renderWorldcup();
-  showToast('Demo-Daten geladen');
+// ── API-Hilfsfunktion ────────────────────────────────────────
+async function api(table, params) {
+  const url = SB_URL + '/rest/v1/' + table + '?' + (params || 'select=*');
+  const token = localStorage.getItem('rb_token') || SB_KEY;
+  const r = await fetch(url, {
+    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + token }
+  });
+  return r.json();
 }
 
 // ── Daten laden ──────────────────────────────────────────────
 async function loadAll() {
-  if (!sb) return;
-  await Promise.all([loadMatches(), loadTournaments(), loadWorldcup()]);
+  allCountries = await api('countries', 'select=id,code,flag');
+  await loadMatches();
+  await loadTournaments();
+  await loadWorldcup();
   renderStandings(1);
 }
 
+function countryById(id) {
+  return allCountries.find(c => c.id === id) || {};
+}
+
 async function loadMatches() {
-  const { data, error } = await sb.from('matches').select(`
-    id, home_score, away_score, match_date, status, round,
-    league:leagues(id, name, country:countries(code, flag)),
-    home_team:teams!home_team_id(club:clubs(name)),
-    away_team:teams!away_team_id(club:clubs(name))
-  `).order('match_date', { ascending: false }).limit(60);
-  if (error) { showToast('Fehler beim Laden der Spiele'); return; }
-  allMatches = (data || []).map(m => ({
-    id: m.id,
-    league_id: m.league?.id,
-    league_name: m.league?.name,
-    country_code: m.league?.country?.code,
-    country_flag: m.league?.country?.flag,
-    home: m.home_team?.club?.name,
-    away: m.away_team?.club?.name,
-    home_score: m.home_score,
-    away_score: m.away_score,
-    match_date: m.match_date,
-    status: m.status,
-    round: m.round
-  }));
+  const matches  = await api('matches',  'select=id,home_score,away_score,match_date,status,round,league_id,home_team_id,away_team_id&order=match_date.desc&limit=100');
+  const leagues  = await api('leagues',  'select=id,name,country_id');
+  const teams    = await api('teams',    'select=id,club_id');
+  const clubs    = await api('clubs',    'select=id,name');
+
+  const lm = {}, tm = {}, cm = {};
+  leagues.forEach(l => lm[l.id] = l);
+  teams.forEach(t => tm[t.id] = t);
+  clubs.forEach(c => cm[c.id] = c.name);
+
+  allMatches = matches.map(m => {
+    const lg  = lm[m.league_id] || {};
+    const co  = countryById(lg.country_id);
+    return {
+      id: m.id, league_id: m.league_id,
+      league_name: lg.name || '',
+      country_code: co.code || '',
+      country_flag: co.flag || '',
+      home: cm[tm[m.home_team_id]?.club_id] || '?',
+      away: cm[tm[m.away_team_id]?.club_id] || '?',
+      home_score: m.home_score, away_score: m.away_score,
+      match_date: m.match_date, status: m.status, round: m.round
+    };
+  });
   renderMatches();
 }
 
 async function loadTournaments() {
-  const { data, error } = await sb.from('tournaments')
-    .select('*, country:countries(flag)')
-    .order('start_date');
-  if (error) { showToast('Fehler Turniere: ' + error.message); return; }
-  console.log('Turniere geladen:', data?.length, data);
-  allTournaments = (data || []).map(t => ({ ...t, country_flag: t.country?.flag }));
+  const data = await api('tournaments', 'select=*&order=start_date');
+  allTournaments = data.map(t => ({
+    ...t, country_flag: countryById(t.country_id).flag || ''
+  }));
   renderTournaments();
 }
 
 async function loadWorldcup() {
-  const { data } = await sb.from('worldcup_rounds')
-    .select('*, country:countries(flag)')
-    .eq('season', '2025/26')
-    .order('round_number');
-  if (data) renderWorldcup(data);
+  const data = await api('worldcup_rounds', 'select=*&season=eq.2025%2F26&order=round_number');
+  renderWorldcup(data.map(r => ({
+    ...r, country: { flag: countryById(r.country_id).flag || '' }
+  })));
 }
 
-async function loadStandings(leagueId) {
-  if (!sb) return;
-  const { data } = await sb.from('league_standings')
-    .select('*').eq('league_id', leagueId)
-    .order('points', { ascending: false });
-  return data || [];
+async function renderStandings(leagueId) {
+  document.getElementById('standings-container').innerHTML = '<div class="loading">Lade…</div>';
+  const rows = await api('league_standings', 'select=*&league_id=eq.' + leagueId + '&order=points.desc');
+  if (!rows.length) { document.getElementById('standings-container').innerHTML = '<div class="loading">Keine Daten</div>'; return; }
+  document.getElementById('standings-container').innerHTML = `
+    <div class="card"><table class="standings-table">
+      <thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>${rows.map((r,i) => `<tr>
+        <td class="rank ${i<3?'top':''}">${i+1}</td>
+        <td>${r.club_name}</td><td>${r.played}</td><td>${r.wins}</td>
+        <td>${r.draws}</td><td>${r.losses}</td>
+        <td>${r.goals_for}:${r.goals_against}</td>
+        <td class="pts">${r.points}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
 }
 
 // ── Realtime ─────────────────────────────────────────────────
 function setupRealtime() {
-  if (!sb) return;
-  sb.channel('pwa-live')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, payload => {
-      const u = payload.new || payload;
-      allMatches = allMatches.map(m => m.id === u.id
-        ? { ...m, home_score: u.home_score, away_score: u.away_score, status: u.status }
-        : m);
-      renderMatches();
-      showToast('🔴 Ergebnis aktualisiert');
+  try {
+    const ws = new WebSocket(SB_URL.replace('https://','wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ topic:'realtime:public:matches', event:'phx_join', payload:{ config:{ postgres_changes:[{event:'*',schema:'public',table:'matches'}] } }, ref:'1' }));
+      ws.send(JSON.stringify({ topic:'realtime:public:tournament_matches', event:'phx_join', payload:{ config:{ postgres_changes:[{event:'*',schema:'public',table:'tournament_matches'}] } }, ref:'2' }));
       document.getElementById('realtime-dot').classList.add('connected');
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches' }, () => {
-      // Turnier-Detail neu laden falls offen
-      const dv = document.getElementById('tour-detail-view');
-      if (dv.style.display !== 'none' && currentTourId) showTourDetail(currentTourId);
-    })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'worldcup_rounds' }, () => {
-      loadWorldcup();
-    })
-    .subscribe(status => {
-      if (status === 'SUBSCRIBED')
-        document.getElementById('realtime-dot').classList.add('connected');
-    });
+    };
+    ws.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.payload?.data?.table === 'matches') { loadMatches(); showToast('🔴 Live-Update'); }
+        if (msg.payload?.data?.table === 'tournament_matches' && currentTourId) showTourDetail(currentTourId);
+      } catch(_) {}
+    };
+    ws.onclose = () => { document.getElementById('realtime-dot').classList.remove('connected'); setTimeout(setupRealtime, 5000); };
+  } catch(_) {}
 }
 
 // ── Render: Ergebnisse ───────────────────────────────────────
 function renderMatches() {
-  const filtered = currentCountry === 'all'
-    ? allMatches
-    : allMatches.filter(m => m.country_code === currentCountry);
-
+  const filtered = currentCountry === 'all' ? allMatches : allMatches.filter(m => m.country_code === currentCountry);
   const live     = filtered.filter(m => m.status === 'live');
   const recent   = filtered.filter(m => m.status === 'finished');
   const upcoming = filtered.filter(m => m.status === 'scheduled');
-
   let html = '';
-
   if (live.length) {
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="section-title" style="margin:0">Live jetzt</div>
-      <span style="font-size:12px;color:#e03535"><span class="live-dot"></span>${live.length} live</span>
-    </div>`;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="section-title" style="margin:0">Live jetzt</div><span style="font-size:12px;color:#e03535"><span class="live-dot"></span>${live.length} live</span></div>`;
     html += '<div class="card" style="margin-bottom:16px">' + live.map(m => matchRow(m, true)).join('') + '</div>';
   }
-
   const byLeague = {};
   [...recent, ...upcoming].forEach(m => {
-    const key = m.league_id + '|' + m.league_name + '|' + m.country_flag;
-    if (!byLeague[key]) byLeague[key] = [];
-    byLeague[key].push(m);
+    const k = m.league_id + '|' + m.league_name + '|' + m.country_flag;
+    if (!byLeague[k]) byLeague[k] = [];
+    byLeague[k].push(m);
   });
-
   if (recent.length || upcoming.length) {
     html += '<div class="section-title">Letzte Ergebnisse & Spielplan</div>';
-    for (const [key, ms] of Object.entries(byLeague)) {
-      const [,name,flag] = key.split('|');
-      html += `<div class="card" data-country="${ms[0].country_code}">
-        <div class="country-label">${flag} ${name}</div>
-        ${ms.map(m => matchRow(m)).join('')}
-      </div>`;
+    for (const [k, ms] of Object.entries(byLeague)) {
+      const [,name,flag] = k.split('|');
+      html += `<div class="card"><div class="country-label">${flag} ${name}</div>${ms.map(m => matchRow(m)).join('')}</div>`;
     }
   }
-
   if (!html) html = '<div class="loading">Keine Spiele gefunden</div>';
   document.getElementById('results-container').innerHTML = html;
 }
 
 function matchRow(m, isLive=false) {
-  const score = m.status === 'finished' || isLive
-    ? `${m.home_score ?? '–'}<span style="color:#ccc;margin:0 2px">:</span>${m.away_score ?? '–'}`
-    : '– : –';
-  const dateStr = m.match_date ? m.match_date.split('T')[0] : '';
-  return `<div class="match-row" id="match-${m.id}">
-    <div class="match-teams">
-      ${isLive ? '<span class="live-dot"></span>' : ''}
-      <span>${m.home}</span><span class="vs">–</span><span>${m.away}</span>
-    </div>
-    <div class="score">${score}</div>
-    <div class="match-meta">Rd.${m.round ?? '?'} · ${dateStr}</div>
-  </div>`;
+  const score = m.status==='finished'||isLive ? `${m.home_score??'–'}<span style="color:#ccc;margin:0 2px">:</span>${m.away_score??'–'}` : '– : –';
+  return `<div class="match-row"><div class="match-teams">${isLive?'<span class="live-dot"></span>':''}<span>${m.home}</span><span class="vs">–</span><span>${m.away}</span></div><div class="score">${score}</div><div class="match-meta">Rd.${m.round??'?'} · ${(m.match_date||'').split('T')[0]}</div></div>`;
 }
 
 // ── Render: Turniere ─────────────────────────────────────────
 function renderTournaments() {
-  const filtered = currentTourFilter === 'all'
-    ? allTournaments
-    : allTournaments.filter(t => t.category === currentTourFilter);
-
-  console.log('renderTournaments:', allTournaments.length, 'total,', filtered.length, 'gefiltert, Filter:', currentTourFilter);
-
+  const filtered = currentTourFilter === 'all' ? allTournaments : allTournaments.filter(t => t.category === currentTourFilter);
   if (!filtered.length) {
-    document.getElementById('tournaments-container').innerHTML =
-      `<div class="loading">Keine Turniere gefunden (${allTournaments.length} gesamt geladen)</div>`;
+    document.getElementById('tournaments-container').innerHTML = '<div class="loading">Keine Turniere</div>';
     return;
   }
-
-  const MONTHS = ['','JAN','FEB','MÄR','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
-  const catBadge = c => ({
-    WM:'badge-wm', EM:'badge-em', Weltcup:'badge-wc',
-    National:'badge-nat', International:'badge-int'
-  }[c] || 'badge-int');
-
+  const M = ['','JAN','FEB','MÄR','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
+  const cb = c => ({WM:'badge-wm',EM:'badge-em',Weltcup:'badge-wc',National:'badge-nat',International:'badge-int'}[c]||'badge-int');
   document.getElementById('tournaments-container').innerHTML = filtered.map(t => {
-    const d = t.start_date ? t.start_date.split('-') : ['','01','01'];
-    const flag = t.country_flag || t.country?.flag || '';
+    const d = (t.start_date||'').split('-');
     return `<div class="tournament-card" onclick="showTourDetail(${t.id})">
-      <div class="date-box">
-        <div class="date-day">${d[2]}</div>
-        <div class="date-mon">${MONTHS[+d[1]] || ''}</div>
-      </div>
+      <div class="date-box"><div class="date-day">${d[2]||'–'}</div><div class="date-mon">${M[+d[1]]||''}</div></div>
       <div style="flex:1">
         <div class="tour-name">${t.name}</div>
-        <div class="tour-meta">
-          ${flag} ${t.city || ''}
-          <span class="badge ${catBadge(t.category)}">${t.category}</span>
-          <span class="badge" style="background:#f0f0ec;color:#666">${t.age_group || ''}</span>
-        </div>
+        <div class="tour-meta">${t.country_flag||''} ${t.city||''} <span class="badge ${cb(t.category)}">${t.category}</span> <span class="badge" style="background:#f0f0ec;color:#666">${t.age_group||''}</span></div>
       </div>
       <span style="color:#bbb;font-size:12px">→</span>
     </div>`;
@@ -566,6 +380,7 @@ function renderTournaments() {
 
 // ── Render: Turnier-Detail ───────────────────────────────────
 async function showTourDetail(id) {
+  currentTourId = id;
   const t = allTournaments.find(x => x.id === id);
   if (!t) return;
   document.getElementById('tour-list-view').style.display = 'none';
@@ -573,210 +388,94 @@ async function showTourDetail(id) {
   dv.style.display = 'block';
   dv.innerHTML = '<div class="loading">Lade Spielplan…</div>';
 
-  let entries = [], tMatches = [];
-
-  if (sb) {
-    const [{data: eData}, {data: mData}] = await Promise.all([
-      sb.from('tournament_entries').select('*').eq('tournament_id', id).order('id'),
-      sb.from('tournament_matches').select('*').eq('tournament_id', id).order('match_number')
-    ]);
-    entries  = eData  || [];
-    tMatches = mData  || [];
-  } else {
-    // Demo-Daten
-    entries = [
-      {id:1,team_name:'RV Lüblow 1',player1:'Ludwig Badel',player2:'Louis Ihlenfeld',association:'MEV'},
-      {id:2,team_name:'RVW Wimsheim',player1:'Raphael Böhringer',player2:'Niklas Engel',association:'WTB'},
-      {id:3,team_name:'RSV Zscherben 1',player1:'Cedric Kern',player2:'Mateo Hirschfeld',association:'SAH'},
-      {id:4,team_name:'RKB Bischberg',player1:'Nils Walther',player2:'Luca Krug',association:'BAY'},
-      {id:5,team_name:'RMSV Klein-Gerau 2',player1:'Emilio Garbisch',player2:'Lorenzo Garbisch',association:'HES'},
-      {id:6,team_name:'RV Edelweiß Fraureuth',player1:'Noah Teichmann',player2:'Alois Hupfer',association:'SAC'},
-    ];
-    tMatches = [[1,2],[3,4],[5,6],[1,3],[2,5],[4,6],[1,5],[3,6],[2,4],[1,4],[3,5],[2,6],[1,6],[3,2],[4,5]]
-      .map(([h,a],i) => ({id:i+1, match_number:i+1, home_entry_id:h, away_entry_id:a, home_score:null, away_score:null, status:'scheduled', phase:'Runde', group_label:null}));
-  }
+  const entries  = await api('tournament_entries', 'select=*&tournament_id=eq.' + id + '&order=id');
+  const tMatches = await api('tournament_matches',  'select=*&tournament_id=eq.' + id + '&order=match_number');
 
   const entryMap = {};
   entries.forEach(e => entryMap[e.id] = e);
 
-  // Nach Phase gruppieren
   const byPhase = {};
   tMatches.forEach(m => {
-    const key = (m.phase||'Runde') + (m.group_label ? ' ' + m.group_label : '');
-    if (!byPhase[key]) byPhase[key] = [];
-    byPhase[key].push(m);
+    const k = (m.phase||'Runde') + (m.group_label?' '+m.group_label:'');
+    if (!byPhase[k]) byPhase[k] = [];
+    byPhase[k].push(m);
   });
 
   const phaseHtml = Object.entries(byPhase).map(([phase, ms]) => `
     <div class="section-title" style="margin-top:14px">${phase}</div>
     ${ms.map(m => {
-      const h = entryMap[m.home_entry_id];
-      const a = entryMap[m.away_entry_id];
-      const sc = m.status === 'finished'
-        ? `<b>${m.home_score}</b><span style="color:#ccc;margin:0 3px">:</span><b>${m.away_score}</b>`
-        : m.status === 'live'
-          ? `<span class="live-dot"></span><b>${m.home_score??'–'}</b><span style="color:#ccc;margin:0 3px">:</span><b>${m.away_score??'–'}</b>`
-          : '<span style="color:#bbb">– : –</span>';
-      return `<div class="game-slot">
-        <span class="game-num">${m.match_number||'–'}</span>
-        <span style="flex:1;font-size:13px">${h?.team_name||'TBD'}</span>
-        <span class="game-score ${m.status==='scheduled'?'pending':''}" style="font-size:14px">${sc}</span>
-        <span style="flex:1;font-size:13px;text-align:right">${a?.team_name||'TBD'}</span>
-      </div>`;
-    }).join('')}
-  `).join('');
+      const h = entryMap[m.home_entry_id], a = entryMap[m.away_entry_id];
+      const sc = m.status==='finished' ? `<b>${m.home_score}</b><span style="color:#ccc;margin:0 3px">:</span><b>${m.away_score}</b>`
+        : m.status==='live' ? `<span class="live-dot"></span><b>${m.home_score??'–'}</b><span style="color:#ccc;margin:0 3px">:</span><b>${m.away_score??'–'}</b>`
+        : '<span style="color:#bbb">– : –</span>';
+      return `<div class="game-slot"><span class="game-num">${m.match_number||'–'}</span><span style="flex:1">${h?.team_name||'TBD'}</span><span class="game-score ${m.status==='scheduled'?'pending':''}">${sc}</span><span style="flex:1;text-align:right">${a?.team_name||'TBD'}</span></div>`;
+    }).join('')}`).join('');
 
-  // Tabelle berechnen (nur für Jeder-gegen-Jeden / Gruppenphase)
-  const groupPhaseMatches = tMatches.filter(m =>
-    ['Runde','Gruppe'].some(p => (m.phase||'').startsWith(p)) && m.status === 'finished'
-  );
-
+  // Tabelle berechnen
+  const done = tMatches.filter(m => m.status==='finished' && ['Runde','Gruppe'].some(p=>(m.phase||'').startsWith(p)));
   let tableHtml = '';
-  if (groupPhaseMatches.length > 0) {
-    const stats = {};
-    entries.forEach(e => { stats[e.id] = {name:e.team_name, sp:0, s:0, u:0, n:0, tor:0, geg:0, pkt:0}; });
-    groupPhaseMatches.forEach(m => {
-      const h = stats[m.home_entry_id], a = stats[m.away_entry_id];
-      if (!h || !a) return;
-      h.sp++; a.sp++;
-      h.tor += +m.home_score; h.geg += +m.away_score;
-      a.tor += +m.away_score; a.geg += +m.home_score;
-      if (m.home_score > m.away_score) { h.s++; h.pkt+=2; a.n++; }
-      else if (m.home_score < m.away_score) { a.s++; a.pkt+=2; h.n++; }
-      else { h.u++; h.pkt++; a.u++; a.pkt++; }
+  if (done.length) {
+    const st = {};
+    entries.forEach(e => { st[e.id] = {name:e.team_name,sp:0,s:0,u:0,n:0,tf:0,tg:0,p:0}; });
+    done.forEach(m => {
+      const h=st[m.home_entry_id], a=st[m.away_entry_id];
+      if(!h||!a) return;
+      h.sp++; a.sp++; h.tf+=+m.home_score; h.tg+=+m.away_score; a.tf+=+m.away_score; a.tg+=+m.home_score;
+      if(m.home_score>m.away_score){h.s++;h.p+=2;a.n++;}
+      else if(m.home_score<m.away_score){a.s++;a.p+=2;h.n++;}
+      else{h.u++;h.p++;a.u++;a.p++;}
     });
-    const rows = Object.values(stats).sort((a,b)=>b.pkt-a.pkt||(b.tor-b.geg)-(a.tor-a.geg));
-    tableHtml = `
-      <div class="section-title" style="margin-top:16px">Tabelle</div>
-      <table class="standings-table">
-        <thead><tr><th>#</th><th>Team</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
-        <tbody>${rows.map((r,i)=>`<tr>
-          <td class="rank ${i<2?'top':''}">${i+1}</td>
-          <td>${r.name}</td><td>${r.sp}</td><td>${r.s}</td><td>${r.u}</td><td>${r.n}</td>
-          <td>${r.tor}:${r.geg}</td><td class="pts">${r.pkt}</td>
-        </tr>`).join('')}</tbody>
-      </table>`;
+    const rows = Object.values(st).sort((a,b)=>b.p-a.p||(b.tf-b.tg)-(a.tf-a.tg));
+    tableHtml = `<div class="section-title" style="margin-top:16px">Tabelle</div>
+      <table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
+      <tbody>${rows.map((r,i)=>`<tr><td class="rank ${i<2?'top':''}">${i+1}</td><td>${r.name}</td><td>${r.sp}</td><td>${r.s}</td><td>${r.u}</td><td>${r.n}</td><td>${r.tf}:${r.tg}</td><td class="pts">${r.p}</td></tr>`).join('')}</tbody></table>`;
   }
 
   dv.innerHTML = `
     <button class="back-btn" onclick="hideTourDetail()">← Zurück</button>
     <div class="card" style="padding:0;overflow:hidden">
       <div class="tour-detail-header">
-        ${t.organizer ? `<div class="org">${t.organizer}</div>` : ''}
+        ${t.organizer?`<div class="org">${t.organizer}</div>`:''}
         <h2>${t.name}</h2>
-        <div class="meta-row">
-          <span>📅 ${t.start_date||''}</span>
-          ${t.city ? `<span>📍 ${t.city}</span>` : ''}
-          <span>👥 ${entries.length} Teams · ${tMatches.length} Spiele</span>
-        </div>
+        <div class="meta-row"><span>📅 ${t.start_date||''}</span>${t.city?`<span>📍 ${t.city}</span>`:''}<span>👥 ${entries.length} Teams · ${tMatches.length} Spiele</span></div>
       </div>
-      ${t.quali_note ? `<div class="quali-note">🏆 ${t.quali_note}</div>` : ''}
-      ${entries.length ? `
-      <div class="detail-section">
-        <div class="section-title">Teilnehmer (${entries.length})</div>
-        <div class="team-grid">
-          ${entries.map(e=>`<div class="team-entry">
-            <span class="vbd-badge">${e.association||'–'}</span>
-            <div><div class="team-name">${e.team_name}</div>
-            <div class="players">${e.player1||''} ${e.player2?'/ '+e.player2:''}</div></div>
-          </div>`).join('')}
-        </div>
-      </div>` : ''}
-      <div class="detail-section">
-        <div class="section-title">Spielplan (${tMatches.length} Spiele)</div>
-        ${phaseHtml || '<div style="color:#bbb;font-size:13px">Keine Spiele gefunden</div>'}
-        ${tableHtml}
-      </div>
-      ${t.external_url ? `<div class="detail-section"><a href="${t.external_url}" target="_blank" class="result-link">Originalseite →</a></div>` : ''}
+      ${t.quali_note?`<div class="quali-note">🏆 ${t.quali_note}</div>`:''}
+      ${entries.length?`<div class="detail-section"><div class="section-title">Teilnehmer</div><div class="team-grid">${entries.map(e=>`<div class="team-entry"><span class="vbd-badge">${e.association||'–'}</span><div><div class="team-name">${e.team_name}</div><div class="players">${e.player1||''} ${e.player2?'/ '+e.player2:''}</div></div></div>`).join('')}</div></div>`:''}
+      <div class="detail-section">${phaseHtml}${tableHtml}</div>
+      ${t.external_url?`<div class="detail-section"><a href="${t.external_url}" target="_blank" class="result-link">Originalseite →</a></div>`:''}
     </div>`;
 }
 
 function hideTourDetail() {
+  currentTourId = null;
   document.getElementById('tour-detail-view').style.display = 'none';
   document.getElementById('tour-list-view').style.display = 'block';
 }
 
-// ── Render: Tabelle ──────────────────────────────────────────
-async function renderStandings(leagueId) {
-  document.getElementById('standings-container').innerHTML = '<div class="loading">Lade Tabelle…</div>';
-  let rows = [];
-  if (sb) {
-    rows = await loadStandings(leagueId);
-  } else {
-    // Demo
-    rows = [
-      { club_name:'RSV Muggensturm', played:13, wins:11, draws:1, losses:1, goals_for:62, goals_against:28, points:34 },
-      { club_name:'RSV Denkingen',   played:14, wins:10, draws:2, losses:2, goals_for:58, goals_against:33, points:32 },
-      { club_name:'RSC Dittigheim',  played:13, wins:8,  draws:3, losses:2, goals_for:49, goals_against:31, points:27 },
-      { club_name:'RV Bietigheim',   played:13, wins:7,  draws:2, losses:4, goals_for:44, goals_against:38, points:23 },
-      { club_name:'RC Waldshut',     played:14, wins:5,  draws:3, losses:6, goals_for:41, goals_against:47, points:18 },
-      { club_name:'RC Steißlingen',  played:13, wins:4,  draws:2, losses:7, goals_for:37, goals_against:50, points:14 },
-      { club_name:'RV Altdorf',      played:13, wins:2,  draws:1, losses:10,goals_for:29, goals_against:58, points:7  },
-      { club_name:'RV Hemsbach',     played:13, wins:1,  draws:0, losses:12,goals_for:18, goals_against:72, points:3  },
-    ];
-  }
-  if (!rows.length) {
-    document.getElementById('standings-container').innerHTML = '<div class="loading">Keine Daten</div>';
-    return;
-  }
-  document.getElementById('standings-container').innerHTML = `
-    <div class="card">
-      <table class="standings-table">
-        <thead><tr><th>#</th><th>Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Pkt</th></tr></thead>
-        <tbody>${rows.map((r,i) => `
-          <tr>
-            <td class="rank ${i<3?'top':''}">${i+1}</td>
-            <td>${r.club_name}</td>
-            <td>${r.played}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td>
-            <td>${r.goals_for}:${r.goals_against}</td>
-            <td class="pts">${r.points}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
 // ── Render: Weltcup ──────────────────────────────────────────
-function renderWorldcup(data) {
-  const MONTHS = ['','JAN','FEB','MÄR','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
-  const rounds = data || [
-    { round_number:1, city:'Kobe',        country:{flag:'🇯🇵'}, round_date:'2026-02-22', status:'finished', results_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Kobe_2026.htm', results_women_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Kobe_Damen_2026.htm' },
-    { round_number:2, city:'Erzhausen',   country:{flag:'🇩🇪'}, round_date:'2026-03-21', status:'finished', results_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Erzhausen_2026.htm', results_women_url:null },
-    { round_number:3, city:'Baj',         country:{flag:'🇭🇺'}, round_date:'2026-05-09', status:'live',    results_url:'https://www.vfh-muecheln.de/2026/Ergebnisse/WorldCup/WorldCup_Baj_2026.htm', results_women_url:null },
-    { round_number:4, city:'Hähnlein',    country:{flag:'🇩🇪'}, round_date:'2026-08-29', status:'upcoming', results_url:null, results_women_url:null },
-    { round_number:5, city:'Großkoschen', country:{flag:'🇩🇪'}, round_date:'2026-09-12', status:'upcoming', results_url:null, results_women_url:null },
-    { round_number:6, city:'Prechtal',    country:{flag:'🇩🇪'}, round_date:'2026-10-10', status:'upcoming', results_url:null, results_women_url:null },
-    { round_number:7, city:'Mosnang',     country:{flag:'🇨🇭'}, round_date:'2026-11-21', status:'upcoming', results_url:null, results_women_url:null },
-    { round_number:8, city:'Sulgen',      country:{flag:'🇨🇭'}, round_date:'2026-12-12', status:'upcoming', results_url:null, results_women_url:null },
-  ];
-  const isFinale = r => r.round_number === 8;
+function renderWorldcup(rounds) {
+  if (!rounds || !rounds.length) return;
   document.getElementById('wc-rounds-container').innerHTML = rounds.map(r => {
-    const d = r.round_date ? r.round_date.split('-') : ['','01','01'];
-    const cls = isFinale(r) ? 'finale' : r.status;
-    const liveTag = r.status==='live' ? '<span class="live-dot"></span>' : '';
+    const d = (r.round_date||'').split('-');
+    const isFinale = r.round_number === 8;
+    const cls = isFinale ? 'finale' : r.status;
     return `<div class="wc-round ${cls}">
-      <div class="rnd">${liveTag}${isFinale(r)?'Finale':`${r.round_number}. Runde`}</div>
-      <div class="city">${r.country?.flag || ''} ${r.city}</div>
-      <div class="date">${d[2]}.${d[1]}.${d[0]}</div>
-      ${r.results_url ? `<a href="${r.results_url}" target="_blank">Ergebnisse →</a>` : ''}
-      ${r.results_women_url ? `<br><a href="${r.results_women_url}" target="_blank">Women →</a>` : ''}
+      <div class="rnd">${r.status==='live'?'<span class="live-dot"></span>':''}${isFinale?'Finale':r.round_number+'. Runde'}</div>
+      <div class="city">${r.country?.flag||''} ${r.city||''}</div>
+      <div class="wdate">${d[2]||''}.${d[1]||''}.${d[0]||''}</div>
+      ${r.results_url?`<a href="${r.results_url}" target="_blank">Ergebnisse →</a>`:''}
+      ${r.results_women_url?`<br><a href="${r.results_women_url}" target="_blank">Women →</a>`:''}
     </div>`;
   }).join('');
 }
 
-// ── UI-Helpers ───────────────────────────────────────────────
+// ── UI Helpers ───────────────────────────────────────────────
 function showTab(id, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
-  // Turniere neu rendern wenn Tab gewechselt wird
-  if (id === 'turniere') {
-    currentTourFilter = 'all';
-    document.querySelectorAll('#tour-list-view .filter-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('#tour-list-view .filter-btn').classList.add('active');
-    renderTournaments();
-  }
+  if (id === 'turniere') { currentTourFilter = 'all'; document.querySelector('#tour-list-view .filter-btn').classList.add('active'); renderTournaments(); }
 }
 
 function filterCountry(code, btn) {
@@ -790,11 +489,6 @@ function filterTour(cat, btn) {
   currentTourFilter = cat;
   document.querySelectorAll('#tour-list-view .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (allTournaments.length === 0) {
-    // Noch nicht geladen – neu laden
-    if (sb) loadTournaments();
-    return;
-  }
   renderTournaments();
 }
 
@@ -804,23 +498,24 @@ async function switchLeague(id, btn) {
   await renderStandings(id);
 }
 
-function toggleInt(el) {
-  el.classList.toggle('open');
-  el.nextElementSibling.classList.toggle('open');
-}
+function toggleInt(el) { el.classList.toggle('open'); el.nextElementSibling.classList.toggle('open'); }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.display = 'block';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.display = 'none', 2800);
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', 2800);
 }
 
-// ── Service Worker ───────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+// ── Start ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (SB_URL && !SB_URL.includes('DEIN-PROJEKT')) {
+    loadAll().then(setupRealtime);
+  } else {
+    document.getElementById('results-container').innerHTML = '<div class="loading">Bitte SB_URL und SB_KEY in der HTML eintragen</div>';
+  }
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 </body>
 </html>
